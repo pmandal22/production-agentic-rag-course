@@ -1,0 +1,2202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>arXiv Curator Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: fixed left index of weeks (like a paper's table of contents), one long-form article at a time. */
+:root {
+  --paper: #f6f7f5;      /* page ground, faint green-grey */
+  --sheet: #ffffff;      /* code + table surfaces */
+  --ink: #1d2328;        /* body text */
+  --ink-soft: #56616b;   /* secondary text */
+  --rule: #d9ded9;       /* hairlines */
+  --accent: #a3201d;     /* arXiv crimson: links, tags, marks */
+  --accent-soft: #f6e4e2;
+  --code-bg: #eef1ee;
+  --hl-key: #1f5f8b; --hl-str: #2f6b3a; --hl-com: #7a8288; --hl-num: #8a4b0f;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --measure: 70ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15191c; --sheet: #1c2226; --ink: #e3e6e3; --ink-soft: #9aa5ad; --rule: #2e363b;
+    --accent: #f08a7e; --accent-soft: #3a2422; --code-bg: #1f262a;
+    --hl-key: #8cc4ef; --hl-str: #9fd39a; --hl-com: #7f8a91; --hl-num: #f0b77a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15191c; --sheet: #1c2226; --ink: #e3e6e3; --ink-soft: #9aa5ad; --rule: #2e363b;
+  --accent: #f08a7e; --accent-soft: #3a2422; --code-bg: #1f262a;
+  --hl-key: #8cc4ef; --hl-str: #9fd39a; --hl-com: #7f8a91; --hl-num: #f0b77a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.65 var(--font-body); margin: 0; }
+a { color: var(--accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+.shell { display: grid; grid-template-columns: 17rem minmax(0, 1fr); min-height: 100vh; }
+.side {
+  position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: 100vh; overflow-y: auto;
+  border-right: 1px solid var(--rule); padding: 2rem 1.25rem; display: flex; flex-direction: column; gap: 1.5rem;
+}
+.brand { font: 700 1.15rem/1.2 var(--font-display); letter-spacing: 0.01em; color: var(--ink); text-decoration: none; }
+.brand small { display: block; font: 500 0.72rem/1.4 var(--font-mono); color: var(--ink-soft); letter-spacing: 0.04em; margin-top: 0.35rem; text-transform: uppercase; }
+.side ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.side a[data-page], .side a.ext {
+  display: block; padding: 0.45rem 0.65rem; border-radius: 4px; color: var(--ink-soft); text-decoration: none;
+  font: 500 0.95rem/1.3 var(--font-display);
+}
+.side a[data-page]:hover, .side a.ext:hover { color: var(--ink); background: var(--code-bg); }
+.side a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.theme { margin-top: auto; display: flex; gap: 0.35rem; font: 500 0.75rem var(--font-mono); }
+.theme button {
+  font: inherit; color: var(--ink-soft); background: transparent; border: 1px solid var(--rule); border-radius: 4px;
+  padding: 0.3rem 0.55rem; cursor: pointer;
+}
+.theme button[aria-pressed="true"] { color: var(--ink); border-color: var(--ink-soft); }
+
+main { padding-inline: clamp(1rem, 5vw, 4.5rem); padding-block: 3rem 5rem; min-width: 0; }
+.page { max-width: var(--measure); margin-inline: auto; }
+.page[hidden] { display: none !important; }
+
+.post-head { padding-bottom: 1.5rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--rule); }
+.eyebrow { font: 500 0.8rem/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin: 0 0 0.6rem; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.tag { color: var(--accent); border: 1px solid currentColor; border-radius: 3px; padding: 0.05rem 0.4rem; text-transform: none; letter-spacing: 0.02em; }
+.post-head h1 { font: 700 clamp(2rem, 4.5vw, 2.9rem)/1.08 var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.005em; }
+.dek { font-size: 1.15rem; color: var(--ink-soft); margin: 0.9rem 0 0; }
+
+.toc { margin: 0 0 2rem; font: 500 0.92rem/1.4 var(--font-display); }
+.toc summary { cursor: pointer; font: 500 0.75rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.toc ol { margin: 0.75rem 0 0; padding-left: 1.4rem; columns: 2 16rem; column-gap: 2rem; }
+.toc li { break-inside: avoid; padding: 0.12rem 0; }
+.toc a { color: var(--ink); text-decoration: none; }
+.toc a:hover { color: var(--accent); }
+
+.prose > * + * { margin-top: 1.1em; }
+.prose h2 { font: 600 1.6rem/1.2 var(--font-display); margin-top: 2.6em; padding-top: 0.4em; text-wrap: balance; scroll-margin-top: 1rem; }
+.prose h3 { font: 600 1.2rem/1.3 var(--font-display); margin-top: 2em; scroll-margin-top: 1rem; }
+.prose hr { border: 0; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+.prose p, .prose li { max-width: var(--measure); }
+.prose ul, .prose ol { padding-left: 1.4rem; }
+.prose li + li { margin-top: 0.3em; }
+.prose strong { font-weight: 600; }
+.prose img { display: block; max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 4px; background: #fff; margin-inline: auto; }
+
+.prose blockquote { margin: 1.5rem 0; padding: 0.9rem 1.1rem; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 4px 4px 0; }
+.prose blockquote p { margin: 0; }
+.prose blockquote p + p { margin-top: 0.6em; }
+.prose blockquote.lead { border: 0; background: none; padding: 0; font-size: 1.22rem; line-height: 1.5; color: var(--ink); }
+
+code { font: 400 0.86em/1.5 var(--font-mono); background: var(--code-bg); padding: 0.1em 0.32em; border-radius: 3px; overflow-wrap: anywhere; }
+pre { background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 1rem 1.1rem; overflow-x: auto; line-height: 1.5; font-size: 0.95rem; }
+pre code { background: none; padding: 0; font-size: 0.84rem; overflow-wrap: normal; white-space: pre; }
+.hljs-keyword, .hljs-built_in, .hljs-literal, .hljs-attr { color: var(--hl-key); }
+.hljs-string, .hljs-title { color: var(--hl-str); }
+.hljs-comment, .hljs-meta { color: var(--hl-com); font-style: italic; }
+.hljs-number { color: var(--hl-num); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; font: 400 0.92rem/1.45 var(--font-body); font-variant-numeric: tabular-nums; }
+th { font: 600 0.82rem/1.3 var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); text-align: left; background: var(--code-bg); }
+th, td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td code { font-size: 0.8rem; }
+
+.prose input[type="checkbox"] { accent-color: var(--accent); }
+
+.prevnext { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+.pn { text-decoration: none; color: var(--ink); font: 600 1.05rem/1.3 var(--font-display); padding: 0.8rem 1rem; border: 1px solid var(--rule); border-radius: 4px; }
+.pn span { display: block; font: 500 0.72rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 0.2rem; }
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; grid-column: 2; }
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); padding: 1.25rem 1rem; gap: 0.9rem; }
+  .side ol { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .side a[data-page], .side a.ext { border: 1px solid var(--rule); padding: 0.35rem 0.6rem; font-size: 0.88rem; }
+  .theme { margin-top: 0; }
+  main { padding-block: 2rem 4rem; }
+  .prevnext { grid-template-columns: 1fr; }
+  .pn.next { grid-column: 1; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <a class="brand" href="#home">arXiv Paper Curator<small>Production agentic RAG · notes</small></a>
+    <nav aria-label="Weeks"><ol><li><a href="#home" data-page="home">Overview</a></li><li><a class="ext" href="https://jamwithai.substack.com/p/the-infrastructure-that-powers-rag" target="_blank" rel="noopener">Week 1 · Infrastructure <span aria-hidden="true">↗</span></a></li><li><a href="#w2" data-page="w2">Week 2 · Data ingestion</a></li><li><a href="#w3" data-page="w3">Week 3 · BM25 keyword search</a></li><li><a href="#w4" data-page="w4">Week 4 · Chunking + hybrid search</a></li><li><a href="#w5" data-page="w5">Week 5 · Complete RAG</a></li><li><a href="#w6" data-page="w6">Week 6 · Monitoring + caching</a></li><li><a href="#w7" data-page="w7">Week 7 · Agentic RAG + Telegram</a></li></ol></nav>
+    <div class="theme" role="group" aria-label="Theme">
+      <button type="button" id="theme-system" data-theme-choice="system" aria-pressed="true">System</button>
+      <button type="button" id="theme-light" data-theme-choice="light" aria-pressed="false">Light</button>
+      <button type="button" id="theme-dark" data-theme-choice="dark" aria-pressed="false">Dark</button>
+    </div>
+  </aside>
+  <main><article class="page" id="home" data-page="home"><header class="post-head"><p class="eyebrow">Production Agentic RAG · course notes</p><h1>arXiv Paper Curator</h1><p class="dek">Study notes for weeks 2–7, written from the code in this repo. Pick a week on the left, or start with the roadmap below.</p></header><div class="prose"><p>Study notes for each week of the course. Week 1 is covered by the original blog post; Weeks 2–7 are written from the code in this repo (each week's git tag, plus <code>main</code>).</p>
+<blockquote>
+<p>The repo has <strong>7 weeks</strong> of content (tags <code>week1.0</code> … <code>week7.0</code>), even though the original blog series said "Week 1 of 6". Week 6 (monitoring + caching) and Week 7 (agentic RAG + Telegram) were both added later.</p>
+</blockquote>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Theme</th>
+<th>Notes</th>
+<th>Code to study</th>
+<th>Notebook</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Infrastructure foundation</td>
+<td><a href="https://jamwithai.substack.com/p/the-infrastructure-that-powers-rag">Blog post</a></td>
+<td><code>git checkout week1.0</code></td>
+<td><code>notebooks/week1/week1_setup.ipynb</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Data ingestion pipeline</td>
+<td><a href="#w2">week2-data-ingestion.md</a></td>
+<td><code>git checkout week2.0</code></td>
+<td><code>notebooks/week2/week2_arxiv_integration.ipynb</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>BM25 keyword search</td>
+<td><a href="#w3">week3-keyword-search.md</a></td>
+<td><code>git checkout week3.0</code></td>
+<td><code>notebooks/week3/week3_opensearch.ipynb</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Chunking + hybrid search</td>
+<td><a href="#w4">week4-chunking-hybrid-search.md</a></td>
+<td><code>git checkout week4.0</code></td>
+<td><code>notebooks/week4/week4_hybrid_search.ipynb</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Complete RAG with a local LLM</td>
+<td><a href="#w5">week5-complete-rag.md</a></td>
+<td><code>git checkout week5.0</code></td>
+<td><code>notebooks/week5/week5_complete_rag_system.ipynb</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Monitoring (Langfuse) + caching (Redis)</td>
+<td><a href="#w6">week6-monitoring-caching.md</a></td>
+<td><code>git checkout week6.0</code></td>
+<td><code>notebooks/week6/week6_cache_testing.ipynb</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Agentic RAG (LangGraph) + Telegram bot</td>
+<td><a href="#w7">week7-agentic-rag-telegram.md</a></td>
+<td><code>git checkout week7.0</code></td>
+<td><code>notebooks/week7/week7_agentic_rag.ipynb</code></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="home-how-the-system-grows-week-by-week">How the system grows week by week</h2>
+<pre><code>Week 1  Docker Compose: FastAPI · PostgreSQL · OpenSearch · Airflow · Ollama
+          │
+Week 2  arXiv API ──► PDF download ──► Docling parse ──► PostgreSQL     (Airflow, daily)
+          │
+Week 3  PostgreSQL ──► OpenSearch (paper-level index) ──► BM25 /search
+          │
+Week 4  sections ──► chunks ──► Jina embeddings ──► OpenSearch (chunk index, kNN + BM25)
+                                                  └► /hybrid-search  (RRF fusion)
+          │
+Week 5  query ──► hybrid retrieval ──► prompt ──► Ollama ──► /ask, /stream, Gradio UI
+          │
+Week 6  + Redis exact-match cache in front, + Langfuse traces around every step
+          │
+Week 7  + LangGraph agent: guardrail → retrieve → grade → (rewrite → retrieve) → answer
+        + Telegram bot as a second front-end
+</code></pre>
+<h2 id="home-how-to-use-these-notes">How to use these notes</h2>
+<ol>
+<li>Read the week's notes once, end to end.</li>
+<li>Check out that week's tag (<code>git checkout week3.0</code>) and read the files listed under <strong>Code map</strong>. The notes describe <code>main</code>; where a week's tag differs from <code>main</code>, the notes say so.</li>
+<li>Run that week's notebook.</li>
+<li>Answer the <strong>Self-check</strong> questions without looking.</li>
+<li>Read <strong>Gotchas</strong>. Several of them are real bugs on <code>main</code>, and you learn a lot by fixing them.</li>
+</ol>
+<h2 id="home-bugs-on-main-you-should-know-about-before-running-anything">Bugs on <code>main</code> you should know about before running anything</h2>
+<p>These come from reading the code (not from running it). Details are in the linked notes.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Issue</th>
+<th>Where</th>
+<th>Week</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🔴 High</td>
+<td>PDF parsing always fails: <code>parse_pdf</code> became sync in commit <code>1a7ab20</code>, but its caller still <code>await</code>s it, so papers get stored without text and nothing gets chunked</td>
+<td><code>src/services/pdf_parser/parser.py:33</code></td>
+<td><a href="#w2-gotchas">2</a></td>
+</tr>
+<tr>
+<td>🔴 High</td>
+<td><code>/api/v1/ask</code> and <code>/api/v1/stream</code> crash: <code>RAGTracer</code> calls <code>trace_rag_request</code> and <code>create_span</code>, which were removed from <code>LangfuseTracer</code> in the Week 7 commit</td>
+<td><code>src/services/langfuse/tracer.py:21</code></td>
+<td><a href="#w6-gotchas">6</a></td>
+</tr>
+<tr>
+<td>🔴 High</td>
+<td>Agentic RAG answers every question with "out of scope": <code>OllamaClient.get_langchain_model</code> is never defined, so the guardrail falls back to score 50, which is below the threshold of 60</td>
+<td><code>src/services/agents/nodes/guardrail_node.py:84</code></td>
+<td><a href="#w7-gotchas">7</a></td>
+</tr>
+<tr>
+<td>🟠 Medium</td>
+<td>Langfuse keys in <code>.env.example</code> use <code>LANGFUSE_</code> but the settings class reads <code>LANGFUSE__</code> (double underscore), so tracing stays off silently</td>
+<td><code>.env.example:61-67</code> vs <code>src/config.py:108</code></td>
+<td><a href="#w6-gotchas">6</a></td>
+</tr>
+<tr>
+<td>🟡 Low</td>
+<td>Text shorter than 100 words crashes the chunker (<code>_reconstruct_text</code> gets 2 args but takes 1)</td>
+<td><code>src/services/indexing/text_chunker.py:114</code></td>
+<td><a href="#w4-gotchas">4</a></td>
+</tr>
+</tbody>
+</table></div>
+<p>To study each week as it was released (before later weeks changed things), use the week's tag.</p></div></article><article class="page" id="w2" data-page="w2"><header class="post-head"><p class="eyebrow"><span class="tag">week2.0</span>Week 2</p><h1>Data Ingestion Pipeline: Getting Papers Into the System</h1></header><details class="toc" open><summary>On this page</summary><ol><li><a href="#w2-1-why-this-week-matters">Why this week matters</a></li><li><a href="#w2-2-what-you-build">What you build</a></li><li><a href="#w2-3-the-data-flow">The data flow</a></li><li><a href="#w2-4-concepts-and-code-walkthrough">Concepts and code walkthrough</a></li><li><a href="#w2-5-hands-on">Hands-on</a></li><li><a href="#w2-6-design-decisions-and-trade-offs">Design decisions and trade-offs</a></li><li><a href="#w2-7-gotchas">Gotchas</a></li><li><a href="#w2-8-success-checklist">Success checklist</a></li><li><a href="#w2-9-self-check-questions">Self-check questions</a></li><li><a href="#w2-10-whats-next">What&#x27;s next</a></li></ol></details><div class="prose"><blockquote class="lead"><p> Build a pipeline that fetches new cs.AI papers from arXiv every weekday, downloads and parses their PDFs with Docling, and stores metadata plus full text in PostgreSQL. Airflow orchestrates it.</p>
+</blockquote>
+<p><strong>Tag:</strong> <code>week2.0</code> · <strong>Notebook:</strong> <code>notebooks/week2/week2_arxiv_integration.ipynb</code> · <strong>Original blog:</strong> <a href="https://jamwithai.substack.com/p/bringing-your-rag-system-to-life">Building Data Ingestion Pipelines for RAG</a></p>
+<p><img alt="Week 2 architecture" src="../../static/week2_data_ingestion_flow.png" /></p>
+<hr />
+<h2 id="w2-1-why-this-week-matters">1. Why this week matters</h2>
+<p>A RAG system can only retrieve what's in its store. Most RAG tutorials start from a folder of clean text files. Real systems have to:</p>
+<ul>
+<li>talk to an external API that rate-limits you and sometimes times out,</li>
+<li>download large binary files that may be corrupt or huge,</li>
+<li>turn PDFs (two-column layouts, equations, tables) into usable text,</li>
+<li>keep working when 10–20% of items fail,</li>
+<li>run on a schedule without anyone watching.</li>
+</ul>
+<p>Week 2 is ordinary data engineering, and it decides the quality of everything after it. If the parsed text is bad, the chunks are bad, and so are the embeddings and the answers.</p>
+<hr />
+<h2 id="w2-2-what-you-build">2. What you build</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>File</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ArxivClient</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/arxiv/client.py">src/services/arxiv/client.py</a></td>
+<td>Query the arXiv Atom API, parse XML, rate-limit, download PDFs with retries and a local cache</td>
+</tr>
+<tr>
+<td><code>DoclingParser</code> / <code>PDFParserService</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/pdf_parser/docling.py">src/services/pdf_parser/docling.py</a>, <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/pdf_parser/parser.py">parser.py</a></td>
+<td>Validate PDFs, extract sections + raw text</td>
+</tr>
+<tr>
+<td><code>MetadataFetcher</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/metadata_fetcher.py">src/services/metadata_fetcher.py</a></td>
+<td>Orchestrator: fetch → download+parse (concurrently) → store</td>
+</tr>
+<tr>
+<td><code>Paper</code> model</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/models/paper.py">src/models/paper.py</a></td>
+<td>SQLAlchemy table <code>papers</code></td>
+</tr>
+<tr>
+<td><code>PaperRepository</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/repositories/paper.py">src/repositories/paper.py</a></td>
+<td>DB access, including <code>upsert</code> by <code>arxiv_id</code></td>
+</tr>
+<tr>
+<td>Pydantic schemas</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/schemas/arxiv/paper.py">src/schemas/arxiv/paper.py</a>, <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/schemas/pdf_parser/models.py">src/schemas/pdf_parser/models.py</a></td>
+<td><code>ArxivPaper</code>, <code>PaperCreate</code>, <code>PdfContent</code>, <code>ParsedPaper</code></td>
+</tr>
+<tr>
+<td>Airflow DAG</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/airflow/dags/arxiv_paper_ingestion.py">airflow/dags/arxiv_paper_ingestion.py</a> + <a href="https://github.com/jamwithai/production-agentic-rag-course/tree/main/airflow/dags/arxiv_ingestion">airflow/dags/arxiv_ingestion/</a></td>
+<td>Scheduled, retried, observable execution</td>
+</tr>
+<tr>
+<td>Factories</td>
+<td><code>src/services/*/factory.py</code></td>
+<td><code>make_arxiv_client()</code>, <code>make_pdf_parser_service()</code>, <code>make_metadata_fetcher()</code> build services from settings</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="w2-3-the-data-flow">3. The data flow</h2>
+<pre><code>                 ┌──────────────── MetadataFetcher.fetch_and_process_papers() ────────────────┐
+                 │                                                                            │
+ arXiv API ──► Step 1: fetch_papers()  ──► List[ArxivPaper]                                   │
+ (Atom XML)      │   cat:cs.AI AND submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]               │
+                 │                                                                            │
+                 │  Step 2: _process_pdfs_batch()  (one pipeline task per paper)              │
+                 │     ┌── download_semaphore (5) ──► download_pdf() ──► data/arxiv_pdfs/ID.pdf│
+                 │     └── parse_semaphore    (1) ──► parse_pdf()    ──► PdfContent           │
+                 │                                                                            │
+                 │  Step 3: _store_papers_to_db() ──► PaperRepository.upsert() ──► PostgreSQL │
+                 └────────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr />
+<h2 id="w2-4-concepts-and-code-walkthrough">4. Concepts and code walkthrough</h2>
+<h3 id="w2-41-the-arxiv-api">4.1 The arXiv API</h3>
+<p>arXiv returns <strong>Atom XML</strong>, not JSON. One request looks like:</p>
+<pre><code>https://export.arxiv.org/api/query?search_query=cat:cs.AI AND submittedDate:[202508070000+TO+202508072359]
+                                  &amp;start=0&amp;max_results=15&amp;sortBy=submittedDate&amp;sortOrder=descending
+</code></pre>
+<p>What the client does (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/arxiv/client.py#L56-L134">client.py:56-134</a>):</p>
+<ul>
+<li><strong>Query syntax.</strong> <code>cat:</code> filters by category, <code>submittedDate:[FROM+TO+TO]</code> takes <code>YYYYMMDDHHMM</code> timestamps. The client appends <code>0000</code> / <code>2359</code> to cover the whole day.</li>
+<li><strong>URL encoding.</strong> <code>urlencode(..., quote_via=quote, safe=":+[]")</code> stops <code>:</code>, <code>+</code>, <code>[</code>, <code>]</code> from being percent-encoded. arXiv's parser needs them literal, and standard encoding breaks the date filter. This is easy to get wrong.</li>
+<li><strong>Rate limiting.</strong> arXiv asks for ≥3 seconds between requests. The client stores <code>_last_request_time</code> and <code>asyncio.sleep</code>s for the remaining gap. It's a minimal "polite client" pattern.</li>
+<li><strong>Hard cap.</strong> <code>min(max_results, 2000)</code>, the API's own limit per call.</li>
+<li><strong>XML parsing.</strong> <code>ElementTree</code> with an Atom namespace map. Each <code>&lt;entry&gt;</code> becomes an <code>ArxivPaper</code>. A malformed entry returns <code>None</code> and is skipped, so one bad entry doesn't fail the batch.</li>
+<li><strong>Typed errors.</strong> <code>ArxivAPITimeoutError</code>, <code>ArxivAPIException</code> and <code>ArxivParseError</code> (from <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/exceptions.py">src/exceptions.py</a>) let callers react to <em>what</em> failed.</li>
+</ul>
+<h3 id="w2-42-downloading-pdfs-caching-and-retries">4.2 Downloading PDFs: caching and retries</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/arxiv/client.py#L405-L493">client.py:405-493</a></p>
+<ul>
+<li><strong>Cache first.</strong> If <code>data/arxiv_pdfs/&lt;id&gt;.pdf</code> exists and <code>force_download=False</code>, it's reused. Re-running the pipeline is cheap and idempotent.</li>
+<li><strong>Streaming download.</strong> <code>client.stream("GET", url)</code> + <code>aiter_bytes()</code> writes to disk in chunks, so a 20 MB PDF never sits fully in memory.</li>
+<li><strong>Retries with backoff.</strong> Wait is <code>download_retry_delay_base * (attempt + 1)</code> → 5s, 10s, 15s. The comment says "exponential" but this is <strong>linear</strong> backoff. Exponential would be <code>base * 2**attempt</code>, ideally with random jitter.</li>
+<li><strong>Cleanup.</strong> Partial files are deleted when every retry fails.</li>
+</ul>
+<h3 id="w2-43-parsing-pdfs-with-docling">4.3 Parsing PDFs with Docling</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/pdf_parser/docling.py">docling.py</a></p>
+<p>Docling (from IBM) runs layout models over the PDF and labels each text element: <code>title</code>, <code>section_header</code>, paragraph, and so on. It handles two-column layouts much better than plain text extraction (e.g. <code>pypdf</code>).</p>
+<p><strong>Validate before you parse</strong> (<code>_validate_pdf</code>). Cheap checks come before the expensive one:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File size &gt; 0</td>
+<td>Catches failed or partial downloads</td>
+</tr>
+<tr>
+<td>Size ≤ <code>PDF_PARSER__MAX_FILE_SIZE_MB</code> (20)</td>
+<td>Huge PDFs blow up memory</td>
+</tr>
+<tr>
+<td>Starts with <code>%PDF-</code></td>
+<td>Catches HTML error pages saved as <code>.pdf</code></td>
+</tr>
+<tr>
+<td>Pages ≤ <code>PDF_PARSER__MAX_PAGES</code> (30), counted with <code>pypdfium2</code></td>
+<td>Long theses or books take minutes to parse</td>
+</tr>
+</tbody>
+</table></div>
+<p>Too-large or too-long PDFs make <code>parse_pdf</code> return <strong><code>None</code></strong>: the paper is skipped and stored as metadata only. A corrupt file raises an error. That's a deliberate split between "expected skip" and "real failure".</p>
+<p><strong>Section extraction</strong> is a simple state machine over <code>doc.texts</code>:</p>
+<pre><code class="language-python">for element in doc.texts:
+    if element.label in [&quot;title&quot;, &quot;section_header&quot;]:
+        # close the current section, open a new one
+    else:
+        current_section[&quot;content&quot;] += element.text + &quot;\n&quot;
+</code></pre>
+<p>The output is <code>PdfContent(sections=[PaperSection(title, content), ...], raw_text=doc.export_to_text(), ...)</code>. In Week 4 these <strong>sections</strong> become the main input to the chunker, so this loop matters a lot later.</p>
+<p><strong>Pipeline options:</strong> <code>do_ocr=False</code>, because arXiv PDFs are born-digital and OCR is very slow; <code>do_table_structure=True</code>.</p>
+<h3 id="w2-44-the-orchestrator-metadatafetcher">4.4 The orchestrator: <code>MetadataFetcher</code></h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/metadata_fetcher.py">metadata_fetcher.py</a></p>
+<p>The most useful pattern here is <strong>overlapping download and parse with two semaphores</strong>:</p>
+<pre><code class="language-python">download_semaphore = asyncio.Semaphore(self.max_concurrent_downloads)   # 5
+parse_semaphore    = asyncio.Semaphore(self.max_concurrent_parsing)     # 1 (from .env)
+
+async def _download_and_parse_pipeline(paper, ...):
+    async with download_semaphore:
+        pdf_path = await self.arxiv_client.download_pdf(paper)
+    async with parse_semaphore:          # download slot is released before parsing starts
+        pdf_content = await self.pdf_parser.parse_pdf(pdf_path)
+
+results = await asyncio.gather(*tasks, return_exceptions=True)
+</code></pre>
+<ul>
+<li>Downloads are I/O-bound, so several run at once. Parsing is CPU and memory heavy, so <code>.env.example</code> limits it to <strong>1</strong>.</li>
+<li><code>return_exceptions=True</code> means one failed paper doesn't cancel the others; failures are collected in <code>results["errors"]</code>.</li>
+<li>The result dict (<code>papers_fetched</code>, <code>pdfs_downloaded</code>, <code>pdfs_parsed</code>, <code>papers_stored</code>, <code>errors</code>, <code>processing_time</code>) is effectively the pipeline's metrics. Airflow passes it to the report task.</li>
+</ul>
+<p><strong>Graceful degradation:</strong> a paper whose PDF fails is still stored with <code>pdf_processed=False</code> and a note in <code>parser_metadata</code>. Its metadata is still useful, and you can re-process it later with <code>get_unprocessed_papers()</code>.</p>
+<h3 id="w2-45-storage-the-papers-table">4.5 Storage: the <code>papers</code> table</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/models/paper.py">models/paper.py</a></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Column group</th>
+<th>Columns</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Identity</td>
+<td><code>id</code> (UUID PK), <code>arxiv_id</code> (unique, indexed)</td>
+<td><code>arxiv_id</code> is the natural key used for upserts</td>
+</tr>
+<tr>
+<td>arXiv metadata</td>
+<td><code>title</code>, <code>authors</code> (JSON), <code>abstract</code>, <code>categories</code> (JSON), <code>published_date</code>, <code>pdf_url</code></td>
+<td>Lists are stored as JSON</td>
+</tr>
+<tr>
+<td>Parsed content</td>
+<td><code>raw_text</code>, <code>sections</code> (JSON), <code>references</code> (JSON)</td>
+<td>Null if parsing failed</td>
+</tr>
+<tr>
+<td>Processing state</td>
+<td><code>parser_used</code>, <code>parser_metadata</code>, <code>pdf_processed</code>, <code>pdf_processing_date</code></td>
+<td>Lets you query "what still needs work?"</td>
+</tr>
+<tr>
+<td>Audit</td>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td><code>created_at</code> is what the indexing task uses to find new papers</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Upsert</strong> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/repositories/paper.py#L85-L95">repositories/paper.py:85-95</a>): look up by <code>arxiv_id</code>; update it if found, insert otherwise. Re-running the DAG for the same day doesn't create duplicates. This is <strong>idempotency</strong>, the most important property of a scheduled pipeline.</p>
+<blockquote>
+<p>Note: this is a read-then-write upsert, so two concurrent writers could race. PostgreSQL's <code>INSERT ... ON CONFLICT (arxiv_id) DO UPDATE</code> does it atomically in one statement. That's a good exercise.</p>
+</blockquote>
+<h3 id="w2-46-orchestration-with-airflow">4.6 Orchestration with Airflow</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/airflow/dags/arxiv_paper_ingestion.py">arxiv_paper_ingestion.py</a></p>
+<pre><code class="language-python">schedule=&quot;0 6 * * 1-5&quot;     # 06:00 UTC, Monday–Friday (arXiv announces on weekdays)
+retries=2, retry_delay=timedelta(minutes=30)
+max_active_runs=1          # never run two ingestions at once
+catchup=False              # don't backfill every missed day on first deploy
+
+setup_environment &gt;&gt; fetch_daily_papers &gt;&gt; index_papers_hybrid &gt;&gt; generate_daily_report &gt;&gt; cleanup_temp_files
+</code></pre>
+<p>(At <code>week2.0</code> the chain was shorter. The OpenSearch indexing task was added in Week 3 and became <code>index_papers_hybrid</code> in Week 4.)</p>
+<p>Patterns to notice:</p>
+<ul>
+<li><strong>Thin DAG, fat services.</strong> The task functions in <code>airflow/dags/arxiv_ingestion/</code> only wire services together. The logic lives in <code>src/</code> and is shared with the API. The Airflow container mounts <code>src/</code> and adds <code>/opt/airflow</code> to <code>sys.path</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/airflow/dags/arxiv_ingestion/common.py">common.py</a>).</li>
+<li><strong><code>@lru_cache(maxsize=1)</code> on <code>get_cached_services()</code>.</strong> Services are built once per worker process. Docling loads ML models, so you don't want to rebuild it for every task.</li>
+<li><strong>Async inside a sync operator.</strong> <code>PythonOperator</code> callables are sync, so <code>fetch_daily_papers</code> calls <code>asyncio.run(...)</code>.</li>
+<li><strong>XCom for task-to-task data.</strong> <code>fetch_daily_papers</code> pushes <code>fetch_results</code>, and later tasks <code>xcom_pull</code> it. XCom is for <em>small</em> metadata like counts and IDs, never the papers themselves; those go through PostgreSQL.</li>
+<li><strong>"Yesterday" logic.</strong> Each run fetches the previous day's submissions.</li>
+</ul>
+<hr />
+<h2 id="w2-5-hands-on">5. Hands-on</h2>
+<pre><code class="language-bash">git checkout week2.0            # or stay on main and read the Gotchas first
+docker compose down
+docker compose up --build -d    # rebuild: new deps (docling) and new DAGs
+
+# Airflow UI → http://localhost:8080 (credentials: airflow/simple_auth_manager_passwords.json.generated)
+# Unpause &quot;arxiv_paper_ingestion&quot; and trigger it manually.
+
+# Inspect what landed in Postgres
+docker exec -it rag-postgres psql -U rag_user -d rag_db -c \
+  &quot;select arxiv_id, left(title,60), pdf_processed, length(raw_text) from papers order by created_at desc limit 10;&quot;
+
+# Try the arXiv API directly (note the literal + and [ ])
+curl &quot;https://export.arxiv.org/api/query?search_query=cat:cs.AI&amp;max_results=2&amp;sortBy=submittedDate&quot;
+</code></pre>
+<p>Then work through the notebook: client → download → parse → store → end-to-end.</p>
+<hr />
+<h2 id="w2-6-design-decisions-and-trade-offs">6. Design decisions and trade-offs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Why</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Store parsed text in PostgreSQL, not only in the search index</td>
+<td>PostgreSQL is the source of truth, so you can rebuild or re-chunk the index any time without re-downloading PDFs</td>
+<td>Some duplicated storage</td>
+</tr>
+<tr>
+<td>Docling instead of a plain text extractor</td>
+<td>Section structure, reading order in two-column layouts</td>
+<td>Slow (seconds per paper), heavy dependency, ML models in the container</td>
+</tr>
+<tr>
+<td>Skip PDFs &gt; 30 pages / &gt; 20 MB</td>
+<td>Keeps daily runs predictable</td>
+<td>Long papers lose their full text (metadata is still stored)</td>
+</tr>
+<tr>
+<td>One category (<code>cs.AI</code>), 15 papers/day by default</td>
+<td>Small enough to iterate on a laptop</td>
+<td>Not a complete corpus; raise <code>ARXIV__MAX_RESULTS</code> once things work</td>
+</tr>
+<tr>
+<td>Airflow instead of a cron script</td>
+<td>Retries, history, UI, dependency graph, backfills</td>
+<td>Another service to run (and it's memory-hungry)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><a id="w2-gotchas"></a></p>
+<h2 id="w2-7-gotchas">7. Gotchas</h2>
+<ol>
+<li><strong>🔴 PDF parsing is broken on <code>main</code>.</strong> Commit <code>1a7ab20</code> ("remove unnecessary async from parse_pdf") made <code>DoclingParser.parse_pdf</code> synchronous (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/pdf_parser/docling.py#L91">docling.py:91</a>), but <code>PDFParserService.parse_pdf</code> still does <code>result = await self.docling_parser.parse_pdf(pdf_path)</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/pdf_parser/parser.py#L33">parser.py:33</a>). Awaiting a non-awaitable <code>PdfContent</code> raises <code>TypeError</code>. The generic <code>except</code> turns it into <code>PDFParsingException</code>, so <strong>every paper is stored without <code>raw_text</code>/<code>sections</code></strong>. In Week 4 the chunker then has no text and indexes nothing.
+   <strong>Fix:</strong> don't just delete the <code>await</code>. Docling is CPU-bound and synchronous, so calling it directly blocks the event loop and the "concurrent" pipeline becomes serial. Run it in a worker thread:
+   <code>python
+   result = await asyncio.to_thread(self.docling_parser.parse_pdf, pdf_path)</code></li>
+<li><strong>Airflow 3 and <code>execution_date</code>.</strong> <code>fetch_daily_papers</code> reads <code>context.get("execution_date")</code>. Airflow 3 replaced that key with <code>logical_date</code>, so the code most likely always uses the <code>datetime.now() - 1 day</code> fallback. Normal daily runs still work, but manual backfills for older dates won't fetch the date you asked for.</li>
+<li><strong>Monday runs fetch Sunday.</strong> "Yesterday" on a Monday is Sunday, a quiet day for submissions. Expect small Monday batches.</li>
+<li><strong>Rate limiting is per client instance.</strong> <code>_last_request_time</code> lives on the object. Two <code>ArxivClient</code>s, or two Airflow workers, don't coordinate.</li>
+<li><strong>The <code>/api/v1/papers</code> endpoints</strong> in the top-level README existed at <code>week2.0</code> (<code>src/routers/papers.py</code>) but were removed on <code>main</code>.</li>
+<li><strong><code>docker compose up --build</code> is required</strong> after switching tags. Old images won't have Docling or the new DAG code.</li>
+</ol>
+<hr />
+<h2 id="w2-8-success-checklist">8. Success checklist</h2>
+<ul>
+<li class="check"><input type="checkbox" disabled> <code>fetch_papers()</code> returns <code>ArxivPaper</code> objects for a date range</li>
+<li class="check"><input type="checkbox" disabled> PDFs appear in <code>data/arxiv_pdfs/</code> and a second run reuses them (log: "Using cached PDF")</li>
+<li class="check"><input type="checkbox" disabled> <code>parse_pdf()</code> returns sections with sensible titles (Introduction, Method, …)</li>
+<li class="check"><input type="checkbox" disabled> <code>papers</code> table has rows; most have <code>pdf_processed = true</code> and non-null <code>raw_text</code></li>
+<li class="check"><input type="checkbox" disabled> Re-running for the same date doesn't create duplicates</li>
+<li class="check"><input type="checkbox" disabled> The Airflow DAG runs green end to end, and the report task's log shows the counts</li>
+</ul>
+<hr />
+<h2 id="w2-9-self-check-questions">9. Self-check questions</h2>
+<ol>
+<li>Why does the client mark <code>:+[]</code> as "safe" when URL-encoding the query?</li>
+<li>What's the difference between a PDF that returns <code>None</code> from <code>parse_pdf</code> and one that raises? Why handle them differently?</li>
+<li>Downloads have concurrency 5 but parsing has 1. Why not the same number?</li>
+<li>What does <code>return_exceptions=True</code> change about <code>asyncio.gather</code>?</li>
+<li>Why is <code>upsert</code> on <code>arxiv_id</code> essential for a scheduled pipeline? What does <code>max_active_runs=1</code> add?</li>
+<li>Why should XCom carry counts and not the parsed papers?</li>
+<li>If you decided next month to change chunk size, why wouldn't you need to re-download any PDFs?</li>
+</ol>
+<hr />
+<h2 id="w2-10-whats-next">10. What's next</h2>
+<p>The papers are now in PostgreSQL, but PostgreSQL isn't a search engine. <strong>Week 3</strong> indexes them in OpenSearch and builds BM25 keyword search, which every good retrieval system relies on.</p></div><nav class="prevnext" aria-label="Week navigation"><a class="pn prev" href="#home"><span>Previous</span>Overview</a><a class="pn next" href="#w3"><span>Next</span>BM25 keyword search</a></nav></article><article class="page" id="w3" data-page="w3"><header class="post-head"><p class="eyebrow"><span class="tag">week3.0</span>Week 3</p><h1>Keyword Search First: The BM25 Foundation</h1></header><details class="toc" open><summary>On this page</summary><ol><li><a href="#w3-1-why-keyword-search-first">Why keyword search first?</a></li><li><a href="#w3-2-what-you-build">What you build</a></li><li><a href="#w3-3-concepts">Concepts</a></li><li><a href="#w3-4-hands-on">Hands-on</a></li><li><a href="#w3-5-design-decisions-and-trade-offs">Design decisions and trade-offs</a></li><li><a href="#w3-6-gotchas">Gotchas</a></li><li><a href="#w3-7-success-checklist">Success checklist</a></li><li><a href="#w3-8-self-check-questions">Self-check questions</a></li><li><a href="#w3-9-whats-next">What&#x27;s next</a></li></ol></details><div class="prose"><blockquote class="lead"><p> Index papers into OpenSearch with a well-designed mapping, then build a BM25 search API with field boosting, fuzzy matching, filters, highlighting and pagination, before touching vectors.</p>
+</blockquote>
+<p><strong>Tag:</strong> <code>week3.0</code> · <strong>Notebook:</strong> <code>notebooks/week3/week3_opensearch.ipynb</code> · <strong>Original blog:</strong> <a href="https://jamwithai.substack.com/p/the-search-foundation-every-rag-system">The Search Foundation Every RAG System Needs</a></p>
+<p><img alt="Week 3 architecture" src="../../static/week3_opensearch_flow.png" /></p>
+<blockquote>
+<p><strong>Heads-up:</strong> On <code>main</code>, the Week 3 paper-level index (<code>arxiv-papers</code>) and the <code>/api/v1/search</code> endpoint have been <strong>replaced</strong> by Week 4's chunk index and <code>/api/v1/hybrid-search</code>. The BM25 query logic (<code>QueryBuilder</code>) survived and is still used. Run <code>git checkout week3.0</code> to see Week 3 as released.</p>
+</blockquote>
+<hr />
+<h2 id="w3-1-why-keyword-search-first">1. Why keyword search first?</h2>
+<p>Many RAG tutorials go straight to "embed everything, cosine similarity, done". In practice, keyword search does things vectors do badly:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Query</th>
+<th>BM25</th>
+<th>Pure vector search</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"LoRA"</code>, <code>"GPT-4o"</code>, <code>"2508.18563"</code></td>
+<td>Exact token match, top result</td>
+<td>Embedding of a rare acronym is fuzzy and may return generic "fine-tuning" papers</td>
+</tr>
+<tr>
+<td><code>"Llama 3.1 405B"</code></td>
+<td>Every token is a strong signal</td>
+<td>Numbers and version strings are nearly invisible to embeddings</td>
+</tr>
+<tr>
+<td><em>"Why was this result returned?"</em></td>
+<td>Explainable: matched terms, highlights, scores</td>
+<td>A cosine score with no reason attached</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>No model, no GPU, milliseconds</td>
+<td>Needs an embedding call per query and per document</td>
+</tr>
+</tbody>
+</table></div>
+<p>So: <strong>build the keyword baseline first, measure it, and add semantics where it falls short</strong> (Week 4). Hybrid systems in production work the same way.</p>
+<hr />
+<h2 id="w3-2-what-you-build">2. What you build</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>File (at <code>week3.0</code>)</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Index mapping</td>
+<td><code>src/services/opensearch/index_config.py</code></td>
+<td>Schema + analyzers for the <code>arxiv-papers</code> index</td>
+</tr>
+<tr>
+<td><code>OpenSearchClient</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/opensearch/client.py">src/services/opensearch/client.py</a></td>
+<td>Health, index creation, indexing, search</td>
+</tr>
+<tr>
+<td><code>QueryBuilder</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/opensearch/query_builder.py">src/services/opensearch/query_builder.py</a></td>
+<td>Turns a request into OpenSearch Query DSL</td>
+</tr>
+<tr>
+<td>Factory</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/opensearch/factory.py">src/services/opensearch/factory.py</a></td>
+<td><code>make_opensearch_client()</code> from settings</td>
+</tr>
+<tr>
+<td>Search router</td>
+<td><code>src/routers/search.py</code></td>
+<td><code>POST /api/v1/search</code></td>
+</tr>
+<tr>
+<td>Dependency injection</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/dependencies.py">src/dependencies.py</a>, <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/main.py">src/main.py</a></td>
+<td>Client created once in <code>lifespan</code>, injected per request</td>
+</tr>
+<tr>
+<td>Airflow task</td>
+<td><code>airflow/dags/arxiv_ingestion/</code></td>
+<td>New step: PostgreSQL → OpenSearch after fetching</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="w3-3-concepts">3. Concepts</h2>
+<h3 id="w3-31-inverted-index-analyzers-tokens">3.1 Inverted index, analyzers, tokens</h3>
+<p>OpenSearch doesn't scan documents at query time. At index time, each <code>text</code> field goes through an <strong>analyzer</strong>, which splits it into tokens and normalizes them. The index then stores <code>token → [doc ids, positions, frequencies]</code>.</p>
+<p>Week 3's custom analyzer:</p>
+<pre><code class="language-json">&quot;text_analyzer&quot;: {
+  &quot;type&quot;: &quot;custom&quot;,
+  &quot;tokenizer&quot;: &quot;standard&quot;,
+  &quot;filter&quot;: [&quot;lowercase&quot;, &quot;stop&quot;, &quot;snowball&quot;]
+}
+</code></pre>
+<p><code>"Transformers are Learning Representations"</code> → standard tokenizer → <code>[Transformers, are, Learning, Representations]</code> → lowercase → stop-word removal (drops <code>are</code>) → snowball stemming → <code>[transform, learn, represent]</code>.</p>
+<p>The <strong>same analyzer runs on the query</strong>, so a query for "learned transformer" matches. Seeing this is worth more than any explanation:</p>
+<pre><code class="language-bash">curl -s -X POST &quot;localhost:9200/arxiv-papers-chunks/_analyze&quot; -H 'Content-Type: application/json' \
+  -d '{&quot;analyzer&quot;: &quot;text_analyzer&quot;, &quot;text&quot;: &quot;Transformers are Learning Representations&quot;}' | jq '.tokens[].token'
+</code></pre>
+<h3 id="w3-32-bm25-in-one-paragraph">3.2 BM25 in one paragraph</h3>
+<p>BM25 scores a document <em>D</em> for a query term <em>t</em> as:</p>
+<pre><code>score(t, D) = IDF(t) · tf·(k1+1) / ( tf + k1·(1 − b + b·|D|/avgdl) )
+</code></pre>
+<ul>
+<li><strong>IDF</strong>: rare terms count more. "diffusion" matters more than "model".</li>
+<li><strong>TF saturation (<code>k1</code>, default 1.2)</strong>: the 10th occurrence of a term adds much less than the 2nd. Unlike TF-IDF, keyword stuffing doesn't keep paying off.</li>
+<li><strong>Length normalization (<code>b</code>, default 0.75)</strong>: a match in a short field (a title) counts more than the same match in a long one (full text).</li>
+</ul>
+<p>The query score is the sum over query terms. That's also why <strong>field boosting</strong> works: a title is short, so it already scores high per match, and <code>^3</code> amplifies it further.</p>
+<h3 id="w3-33-the-mapping-designing-the-schema">3.3 The mapping: designing the schema</h3>
+<p><code>week3.0:src/services/opensearch/index_config.py</code>:</p>
+<pre><code class="language-json">&quot;mappings&quot;: {
+  &quot;dynamic&quot;: &quot;strict&quot;,
+  &quot;properties&quot;: {
+    &quot;arxiv_id&quot;:   {&quot;type&quot;: &quot;keyword&quot;},
+    &quot;title&quot;:      {&quot;type&quot;: &quot;text&quot;, &quot;analyzer&quot;: &quot;text_analyzer&quot;,
+                   &quot;fields&quot;: {&quot;keyword&quot;: {&quot;type&quot;: &quot;keyword&quot;, &quot;ignore_above&quot;: 256}}},
+    &quot;authors&quot;:    {&quot;type&quot;: &quot;text&quot;, &quot;analyzer&quot;: &quot;standard_analyzer&quot;, &quot;fields&quot;: {&quot;keyword&quot;: ...}},
+    &quot;abstract&quot;:   {&quot;type&quot;: &quot;text&quot;, &quot;analyzer&quot;: &quot;text_analyzer&quot;},
+    &quot;raw_text&quot;:   {&quot;type&quot;: &quot;text&quot;, &quot;analyzer&quot;: &quot;text_analyzer&quot;},
+    &quot;categories&quot;: {&quot;type&quot;: &quot;keyword&quot;},
+    &quot;published_date&quot;: {&quot;type&quot;: &quot;date&quot;},
+    ...
+  }
+}
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"dynamic": "strict"</code></td>
+<td>Unknown fields are <strong>rejected</strong>, not silently added. Typos fail loudly and the schema can't drift.</td>
+</tr>
+<tr>
+<td><code>text</code> vs <code>keyword</code></td>
+<td><code>text</code> is analyzed for full-text search; <code>keyword</code> is stored as-is for exact match, filters, aggregations and sorting. <code>arxiv_id</code> and <code>categories</code> are identifiers, so they're <code>keyword</code>.</td>
+</tr>
+<tr>
+<td>Multi-field <code>title.keyword</code></td>
+<td>One source field, two indexes: searchable <em>and</em> sortable/aggregatable.</td>
+</tr>
+<tr>
+<td>Authors use the <code>standard</code> analyzer (no stemming)</td>
+<td>Stemming names ("Jordan" → "jordan", "Mann" → "mann") doesn't help.</td>
+</tr>
+<tr>
+<td><code>number_of_replicas: 0</code></td>
+<td>Single-node dev cluster. A replica can't be placed on the same node, and the cluster would stay yellow.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="w3-34-the-query-querybuilder">3.4 The query: <code>QueryBuilder</code></h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/opensearch/query_builder.py">query_builder.py</a> builds this (paper mode):</p>
+<pre><code class="language-json">{
+  &quot;query&quot;: {
+    &quot;bool&quot;: {
+      &quot;must&quot;:   [{ &quot;multi_match&quot;: {
+                    &quot;query&quot;: &quot;attention mechanism&quot;,
+                    &quot;fields&quot;: [&quot;title^3&quot;, &quot;abstract^2&quot;, &quot;authors^1&quot;],
+                    &quot;type&quot;: &quot;best_fields&quot;,
+                    &quot;operator&quot;: &quot;or&quot;,
+                    &quot;fuzziness&quot;: &quot;AUTO&quot;,
+                    &quot;prefix_length&quot;: 2 }}],
+      &quot;filter&quot;: [{ &quot;terms&quot;: { &quot;categories&quot;: [&quot;cs.AI&quot;, &quot;cs.LG&quot;] }}]
+    }
+  },
+  &quot;size&quot;: 10, &quot;from&quot;: 0, &quot;track_total_hits&quot;: true,
+  &quot;highlight&quot;: { &quot;fields&quot;: { &quot;abstract&quot;: { &quot;fragment_size&quot;: 150, &quot;number_of_fragments&quot;: 3,
+                                            &quot;pre_tags&quot;: [&quot;&lt;mark&gt;&quot;], &quot;post_tags&quot;: [&quot;&lt;/mark&gt;&quot;] } } }
+}
+</code></pre>
+<p>What each piece does:</p>
+<ul>
+<li><strong><code>bool.must</code> vs <code>bool.filter</code>.</strong> <code>must</code> clauses contribute to the score. <code>filter</code> clauses only include or exclude documents, aren't scored, and are <strong>cached</strong> by OpenSearch. Category filters belong in <code>filter</code>, so they're fast and don't distort relevance.</li>
+<li><strong><code>multi_match</code> + <code>best_fields</code>.</strong> Searches several fields and takes the <strong>best single field's</strong> score per document. Alternatives: <code>most_fields</code> sums the fields (good when the same text is analyzed in different ways), <code>cross_fields</code> treats the fields as one big field (good for names split across first/last).</li>
+<li><strong>Boosts <code>^3 ^2 ^1</code>.</strong> A hit in the title is a stronger signal than one in the abstract.</li>
+<li><strong><code>operator: or</code>.</strong> Any term can match, which favours recall. <code>and</code> would demand all terms, which favours precision.</li>
+<li><strong><code>fuzziness: AUTO</code>, <code>prefix_length: 2</code>.</strong> Typo tolerance: 0 edits for 1–2 character terms, 1 edit for 3–5, 2 edits for more. So <strong>two-letter queries like <code>AI</code>, <code>ML</code>, <code>CV</code> stay exact</strong>; you don't want <code>ML</code> to fuzzy-match <code>MD</code>. <code>prefix_length: 2</code> requires the first two characters to match, which avoids a fuzzy explosion.</li>
+<li><strong>Empty query → <code>match_all</code>, sorted by date.</strong> A useful "latest papers" feed.</li>
+<li><strong><code>latest_papers=True</code> → sort by <code>published_date desc</code>, then <code>_score</code>.</strong></li>
+<li><strong>Highlighting.</strong> Returns matched snippets wrapped in <code>&lt;mark&gt;</code>, used later to show <em>why</em> something matched.</li>
+</ul>
+<blockquote>
+<p>On <code>main</code>, chunk mode switches the fields to <code>["chunk_text^3", "title^2", "abstract^1"]</code>. The same builder serves both modes.</p>
+</blockquote>
+<h3 id="w3-35-pagination">3.5 Pagination</h3>
+<p><code>size</code> + <code>from</code> is simple and fine for the first few pages. Deep pagination (<code>from=10000</code>) is expensive because every shard must collect <code>from+size</code> hits, so OpenSearch caps it. For deep scrolling you'd use <code>search_after</code>.</p>
+<h3 id="w3-36-wiring-it-into-fastapi-factory-lifespan-di">3.6 Wiring it into FastAPI: factory + lifespan + DI</h3>
+<pre><code class="language-python"># main.py: create once at startup
+@asynccontextmanager
+async def lifespan(app):
+    app.state.opensearch_client = make_opensearch_client()
+    if app.state.opensearch_client.health_check():
+        app.state.opensearch_client.setup_indices(force=False)
+    yield
+
+# dependencies.py: fetch per request
+def get_opensearch_client(request: Request) -&gt; OpenSearchClient:
+    return request.app.state.opensearch_client
+OpenSearchDep = Annotated[OpenSearchClient, Depends(get_opensearch_client)]
+
+# router: just declare what you need
+@router.post(&quot;/&quot;)
+async def search_papers(request: SearchRequest, opensearch_client: OpenSearchDep): ...
+</code></pre>
+<p>Why bother:</p>
+<ul>
+<li>One HTTP connection pool, shared by all requests.</li>
+<li>Routers stay thin and <strong>testable</strong>: in tests you override the dependency with a fake client.</li>
+<li>Every service in later weeks (embeddings, Ollama, Redis, Langfuse, the agent) uses exactly this pattern.</li>
+</ul>
+<p>Also note <code>_create_hybrid_index</code> handles <code>resource_already_exists_exception</code>. Several API workers can start at once, all see "index missing", and all try to create it. Handling that race is a small production detail.</p>
+<hr />
+<h2 id="w3-4-hands-on">4. Hands-on</h2>
+<pre><code class="language-bash">git checkout week3.0 &amp;&amp; docker compose up --build -d
+cp .env.example .env     # OPENSEARCH__HOST=http://opensearch:9200, OPENSEARCH__INDEX_NAME=arxiv-papers
+
+# Index health and document count
+curl localhost:9200/_cluster/health?pretty
+curl localhost:9200/arxiv-papers/_count
+
+# Search through the API
+curl -X POST localhost:8000/api/v1/search/ -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;reinforcement learning agents&quot;, &quot;size&quot;: 5, &quot;categories&quot;: [&quot;cs.AI&quot;]}'
+
+# Newest papers, no query
+curl -X POST localhost:8000/api/v1/search/ -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot; &quot;, &quot;latest_papers&quot;: true}'
+</code></pre>
+<p>Then open OpenSearch Dashboards at http://localhost:5601 → Dev Tools, and run the raw query from section 3.4. Change one thing at a time (remove boosts, switch <code>operator</code> to <code>and</code>, set <code>fuzziness: 0</code>) and watch the ranking change.</p>
+<hr />
+<h2 id="w3-5-design-decisions-and-trade-offs">5. Design decisions and trade-offs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Paper-level index (one doc = one paper)</td>
+<td>Simple and good for "find papers", but a 10,000-word <code>raw_text</code> field dilutes BM25 and can't point to <em>where</em> in the paper the answer is. <strong>This is why Week 4 moves to chunks.</strong></td>
+</tr>
+<tr>
+<td>Fuzzy matching on by default</td>
+<td>Catches typos, but can surface surprising matches on short technical terms; <code>prefix_length</code> limits that</td>
+</tr>
+<tr>
+<td><code>best_fields</code></td>
+<td>Good when one field should dominate; ignores evidence spread across fields</td>
+</tr>
+<tr>
+<td>BM25 defaults (<code>k1=1.2, b=0.75</code>)</td>
+<td>Rarely worth tuning before you have an evaluation set</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><a id="w3-gotchas"></a></p>
+<h2 id="w3-6-gotchas">6. Gotchas</h2>
+<ol>
+<li><strong>Strict mapping and new fields.</strong> Add a field to the indexer without adding it to the mapping and bulk indexing <strong>fails</strong> for those docs. Changing a mapping usually means deleting and recreating the index (<code>setup_indices(force=True)</code>) and re-indexing from PostgreSQL. That's why PostgreSQL is the source of truth.</li>
+<li><strong>Index-time and query-time analyzers must agree.</strong> Stemming at index time with a different query analyzer means silent misses.</li>
+<li><strong>The <code>/search</code> endpoint is gone on <code>main</code>.</strong> Use <code>POST /api/v1/hybrid-search/</code> with <code>"use_hybrid": false</code> for pure BM25 on chunks.</li>
+<li><strong>Cluster status <code>yellow</code></strong> on a single node usually means a replica can't be placed. <code>health_check()</code> treats yellow as healthy for this reason.</li>
+</ol>
+<hr />
+<h2 id="w3-7-success-checklist">7. Success checklist</h2>
+<ul>
+<li class="check"><input type="checkbox" disabled> <code>arxiv-papers</code> index exists with the strict mapping (<code>GET /arxiv-papers/_mapping</code>)</li>
+<li class="check"><input type="checkbox" disabled> Document count matches the number of papers in PostgreSQL</li>
+<li class="check"><input type="checkbox" disabled> <code>POST /api/v1/search/</code> returns ranked results with highlights</li>
+<li class="check"><input type="checkbox" disabled> Category filter narrows results without changing their relative order</li>
+<li class="check"><input type="checkbox" disabled> Two-letter queries (<code>AI</code>, <code>ML</code>, <code>NN</code>, <code>CV</code>) return sensible results</li>
+<li class="check"><input type="checkbox" disabled> The Airflow DAG now includes the OpenSearch indexing step and runs green</li>
+</ul>
+<hr />
+<h2 id="w3-8-self-check-questions">8. Self-check questions</h2>
+<ol>
+<li>What's the difference between a <code>text</code> and a <code>keyword</code> field? Which do you use for <code>categories</code>, and why?</li>
+<li>Why are category filters in <code>bool.filter</code> and not <code>bool.must</code>?</li>
+<li>With <code>fuzziness: AUTO</code>, how many edits are allowed for <code>ML</code>? For <code>transformer</code>?</li>
+<li>Explain BM25's <code>k1</code> and <code>b</code> in your own words.</li>
+<li>When would you choose <code>most_fields</code> or <code>cross_fields</code> over <code>best_fields</code>?</li>
+<li>Why does the app create the OpenSearch client in <code>lifespan</code> instead of inside each request?</li>
+<li>What's the main weakness of indexing whole papers as single documents?</li>
+</ol>
+<hr />
+<h2 id="w3-9-whats-next">9. What's next</h2>
+<p>BM25 on whole papers finds the right <em>paper</em> but not the right <em>paragraph</em>, and it misses paraphrases ("LLM" vs "large language model"). <strong>Week 4</strong> splits papers into section-aware chunks, embeds them, and fuses BM25 with vector search using Reciprocal Rank Fusion.</p></div><nav class="prevnext" aria-label="Week navigation"><a class="pn prev" href="#w2"><span>Previous</span>Data ingestion</a><a class="pn next" href="#w4"><span>Next</span>Chunking + hybrid search</a></nav></article><article class="page" id="w4" data-page="w4"><header class="post-head"><p class="eyebrow"><span class="tag">week4.0</span>Week 4</p><h1>Chunking and Hybrid Search: Adding the Semantic Layer</h1></header><details class="toc" open><summary>On this page</summary><ol><li><a href="#w4-1-why-this-week-matters">Why this week matters</a></li><li><a href="#w4-2-what-you-build">What you build</a></li><li><a href="#w4-3-chunking">Chunking</a></li><li><a href="#w4-4-embeddings">Embeddings</a></li><li><a href="#w4-5-the-chunk-index">The chunk index</a></li><li><a href="#w4-6-hybrid-search-with-reciprocal-rank-fusion">Hybrid search with Reciprocal Rank Fusion</a></li><li><a href="#w4-7-hands-on">Hands-on</a></li><li><a href="#w4-8-design-decisions-and-trade-offs">Design decisions and trade-offs</a></li><li><a href="#w4-9-gotchas">Gotchas</a></li><li><a href="#w4-10-success-checklist">Success checklist</a></li><li><a href="#w4-11-self-check-questions">Self-check questions</a></li><li><a href="#w4-12-whats-next">What&#x27;s next</a></li></ol></details><div class="prose"><blockquote class="lead"><p> Split each paper into section-aware chunks, embed them with Jina (1024-dim), store vectors and text in one OpenSearch index, and serve BM25, vector or <strong>hybrid (RRF)</strong> search from a single endpoint.</p>
+</blockquote>
+<p><strong>Tag:</strong> <code>week4.0</code> · <strong>Notebook:</strong> <code>notebooks/week4/week4_hybrid_search.ipynb</code> · <strong>Original blog:</strong> <a href="https://jamwithai.substack.com/p/chunking-strategies-and-hybrid-rag">The Chunking Strategy That Makes Hybrid Search Work</a></p>
+<p><img alt="Week 4 architecture" src="../../static/week4_hybrid_opensearch.png" /></p>
+<hr />
+<h2 id="w4-1-why-this-week-matters">1. Why this week matters</h2>
+<p>Week 3's search finds the right <strong>paper</strong>. An LLM in Week 5 needs the right <strong>passage</strong>: a few hundred words it can read and quote. And BM25 can't match meaning ("LLM" ≠ "large language model" to BM25).</p>
+<p>Week 4 fixes both:</p>
+<ol>
+<li><strong>Chunking</strong> gives retrieval a granularity that fits embedding models and LLM context windows.</li>
+<li><strong>Embeddings</strong> add semantic matching.</li>
+<li><strong>Hybrid search with RRF</strong> combines BM25 precision on exact terms with vector recall on meaning, without tuning weights.</li>
+</ol>
+<p>How you chunk is one of the most important decisions in a RAG system, and it gets much less attention than model choice.</p>
+<hr />
+<h2 id="w4-2-what-you-build">2. What you build</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>File</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TextChunker</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/indexing/text_chunker.py">src/services/indexing/text_chunker.py</a></td>
+<td>Section-aware chunking with word-window fallback</td>
+</tr>
+<tr>
+<td><code>JinaEmbeddingsClient</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/embeddings/jina_client.py">src/services/embeddings/jina_client.py</a></td>
+<td>Passage and query embeddings (<code>jina-embeddings-v3</code>, 1024 dims)</td>
+</tr>
+<tr>
+<td><code>HybridIndexingService</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/indexing/hybrid_indexer.py">src/services/indexing/hybrid_indexer.py</a></td>
+<td>chunk → embed → bulk index, per paper</td>
+</tr>
+<tr>
+<td>Chunk index mapping + RRF pipeline</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/opensearch/index_config_hybrid.py">src/services/opensearch/index_config_hybrid.py</a></td>
+<td><code>arxiv-papers-chunks</code> with <code>knn_vector</code> + text fields; <code>hybrid-rrf-pipeline</code></td>
+</tr>
+<tr>
+<td><code>OpenSearchClient.search_unified</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/opensearch/client.py#L181-L216">src/services/opensearch/client.py:181-216</a></td>
+<td>One method, three modes</td>
+</tr>
+<tr>
+<td>Hybrid search router</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/hybrid_search.py">src/routers/hybrid_search.py</a></td>
+<td><code>POST /api/v1/hybrid-search/</code></td>
+</tr>
+<tr>
+<td>Airflow task</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/airflow/dags/arxiv_ingestion/indexing.py">airflow/dags/arxiv_ingestion/indexing.py</a></td>
+<td><code>index_papers_hybrid</code> replaces the old indexing step</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="w4-3-chunking">3. Chunking</h2>
+<h3 id="w4-31-why-not-just-split-every-n-words">3.1 Why not just split every N words?</h3>
+<p>Fixed windows are simple, but they cut through sections, mix "Related Work" with "Method", and leave chunks with no idea what paper they're from. The chunker here is <strong>hybrid section-based</strong>: it uses the section structure Docling extracted in Week 2 and only falls back to fixed windows when it has to.</p>
+<h3 id="w4-32-the-algorithm">3.2 The algorithm</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/indexing/text_chunker.py#L54-L91">text_chunker.py:54-91</a> and <code>_chunk_by_sections</code>:</p>
+<pre><code>chunk_paper(title, abstract, raw_text, sections)
+│
+├─ sections available?
+│   ├─ parse (dict | list | JSON string) → {section_title: content}
+│   ├─ filter out:
+│   │     • empty sections
+│   │     • metadata-looking titles (&quot;authors&quot;, &quot;affiliation&quot;, &quot;arxiv&quot;, titles &lt; 5 chars, …)
+│   │     • sections that duplicate the abstract (substring or &gt; 80% word overlap)
+│   │     • tiny sections that look like emails/affiliations
+│   │
+│   ├─ header = &quot;{title}\n\nAbstract: {abstract}\n\n&quot;
+│   │
+│   └─ for each section:
+│        &lt; 100 words   → buffer; merge with neighbouring small sections
+│                         (if still &lt; 200 words incl. header, append to the previous chunk)
+│        100–800 words → ONE chunk:  header + &quot;Section: {title}\n\n{content}&quot;
+│        &gt; 800 words   → word-window split (600 words, 100 overlap), header prepended to each part
+│                         section_title = &quot;Method (Part 1)&quot;, &quot;Method (Part 2)&quot;, …
+│
+└─ no usable sections → chunk_text(raw_text): 600-word windows, step 500 (100-word overlap)
+</code></pre>
+<p>Config (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/config.py">src/config.py</a> <code>ChunkingSettings</code>, <code>.env</code>): <code>CHUNKING__CHUNK_SIZE=600</code>, <code>CHUNKING__OVERLAP_SIZE=100</code>, <code>CHUNKING__MIN_CHUNK_SIZE=100</code>.</p>
+<h3 id="w4-33-the-key-idea-contextual-headers">3.3 The key idea: contextual headers</h3>
+<p>Every chunk starts with <strong>the paper title and abstract</strong>. A chunk from deep in "4.2 Ablations" is useless on its own ("removing component B reduces accuracy by 3%"... B of <em>what</em>?). With the header attached:</p>
+<ul>
+<li>its <strong>embedding</strong> carries the paper's topic, so semantic search finds it for topic-level queries,</li>
+<li>its <strong>BM25</strong> score gets title and abstract terms,</li>
+<li>the <strong>LLM</strong> in Week 5 sees what the passage belongs to.</li>
+</ul>
+<p><strong>Trade-off:</strong> the abstract (≈150–250 words) is repeated in every chunk of the paper. That costs index size and embedding tokens, and when <code>top_k</code> chunks from the same paper reach the LLM, the abstract is in the prompt several times. Some systems prepend only the title, or a one-sentence LLM-written summary ("contextual retrieval").</p>
+<h3 id="w4-34-overlap">3.4 Overlap</h3>
+<p>In window mode, consecutive chunks share 100 words, so a sentence that straddles a boundary appears whole in at least one chunk. Section-based chunks have no overlap; section boundaries are natural breakpoints anyway.</p>
+<h3 id="w4-35-exercise">3.5 Exercise</h3>
+<p>Pick one paper from PostgreSQL and run:</p>
+<pre><code class="language-python">from src.services.indexing.text_chunker import TextChunker
+chunks = TextChunker().chunk_paper(title=p.title, abstract=p.abstract, full_text=p.raw_text,
+                                   arxiv_id=p.arxiv_id, paper_id=str(p.id), sections=p.sections)
+for c in chunks: print(c.metadata.chunk_index, c.metadata.section_title, c.metadata.word_count)
+</code></pre>
+<p>Look at which sections were dropped, merged and split. Do the boundaries make sense?</p>
+<hr />
+<h2 id="w4-4-embeddings">4. Embeddings</h2>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/embeddings/jina_client.py">jina_client.py</a></p>
+<ul>
+<li><strong>Model:</strong> <code>jina-embeddings-v3</code>, <code>dimensions=1024</code>. It's an API, so you need <code>JINA_API_KEY</code>; the free tier is enough for this course.</li>
+<li><strong>Asymmetric tasks:</strong> chunks are embedded with <code>task="retrieval.passage"</code> and queries with <code>task="retrieval.query"</code>. Queries are short questions and passages are long statements, and the model has separate adapters for each. Using the wrong task quietly lowers quality.</li>
+<li><strong>Batching:</strong> <code>embed_passages(texts, batch_size=50)</code> during indexing, so one HTTP call covers up to 50 chunks.</li>
+<li><strong>Failure handling:</strong> the client raises on HTTP errors. The <strong>router</strong> catches that and falls back to BM25 (section 6.3), so search still works when Jina is down.</li>
+</ul>
+<hr />
+<h2 id="w4-5-the-chunk-index">5. The chunk index</h2>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/opensearch/index_config_hybrid.py">index_config_hybrid.py</a> defines <strong>one</strong> index, <code>arxiv-papers-chunks</code>, serving all three modes:</p>
+<pre><code class="language-json">&quot;settings&quot;: { &quot;index.knn&quot;: true, ... },
+&quot;mappings&quot;: { &quot;dynamic&quot;: &quot;strict&quot;, &quot;properties&quot;: {
+  &quot;chunk_text&quot;:   {&quot;type&quot;: &quot;text&quot;, &quot;analyzer&quot;: &quot;text_analyzer&quot;},
+  &quot;embedding&quot;:    {&quot;type&quot;: &quot;knn_vector&quot;, &quot;dimension&quot;: 1024,
+                   &quot;method&quot;: {&quot;name&quot;: &quot;hnsw&quot;, &quot;space_type&quot;: &quot;cosinesimil&quot;, &quot;engine&quot;: &quot;nmslib&quot;,
+                              &quot;parameters&quot;: {&quot;ef_construction&quot;: 512, &quot;m&quot;: 16}}},
+  &quot;arxiv_id&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;chunk_index&quot;: {&quot;type&quot;: &quot;integer&quot;}, &quot;section_title&quot;: {&quot;type&quot;: &quot;keyword&quot;},
+  &quot;title&quot;: {...}, &quot;abstract&quot;: {...}, &quot;authors&quot;: {...}, &quot;categories&quot;: {&quot;type&quot;: &quot;keyword&quot;},
+  &quot;published_date&quot;: {&quot;type&quot;: &quot;date&quot;}, ...
+}}
+</code></pre>
+<ul>
+<li><strong>One index for both modes.</strong> BM25 and kNN run against the same documents, so no syncing between two stores.</li>
+<li><strong>Denormalization.</strong> Every chunk carries its paper's <code>title</code>, <code>authors</code>, <code>abstract</code>, <code>categories</code> and <code>published_date</code>. Filters and display need no join. It's normal search-engine practice, and it's why <code>HybridIndexingService</code> copies paper fields into each chunk.</li>
+<li><strong>HNSW</strong> (Hierarchical Navigable Small World) is an <em>approximate</em> nearest-neighbour graph. <code>m=16</code> is the number of links per node (more means better recall and more memory). <code>ef_construction=512</code> is how carefully the graph is built (higher means better recall and slower indexing).</li>
+<li><strong><code>cosinesimil</code></strong> fits Jina vectors, which are meant to be compared by cosine.</li>
+</ul>
+<p><strong>Re-indexing</strong> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/indexing/hybrid_indexer.py#L118-L155">hybrid_indexer.py:118-155</a>): with <code>replace_existing=True</code>, each paper's old chunks are deleted (<code>delete_by_query</code> on <code>arxiv_id</code>) before the new ones are bulk-indexed. Re-running the DAG doesn't duplicate chunks.</p>
+<hr />
+<h2 id="w4-6-hybrid-search-with-reciprocal-rank-fusion">6. Hybrid search with Reciprocal Rank Fusion</h2>
+<h3 id="w4-61-the-problem-with-mixing-scores">6.1 The problem with mixing scores</h3>
+<p>BM25 scores are unbounded (5, 12, 30…). Cosine-based kNN scores sit in a narrow range near 1. Adding them is meaningless, and normalizing and weighting them takes tuning that breaks when the corpus changes.</p>
+<h3 id="w4-62-rrf-uses-ranks-not-scores">6.2 RRF uses ranks, not scores</h3>
+<pre><code>RRF(d) = Σ over result lists r   1 / (k + rank_r(d))          k = 60
+</code></pre>
+<p>Worked example (k = 60):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Chunk</th>
+<th>BM25 rank</th>
+<th>Vector rank</th>
+<th>RRF score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>1</td>
+<td>3</td>
+<td>1/61 + 1/63 = <strong>0.0323</strong></td>
+</tr>
+<tr>
+<td>B</td>
+<td>2</td>
+<td>—</td>
+<td>1/62 = 0.0161</td>
+</tr>
+<tr>
+<td>C</td>
+<td>—</td>
+<td>1</td>
+<td>1/61 = 0.0164</td>
+</tr>
+<tr>
+<td>D</td>
+<td>4</td>
+<td>2</td>
+<td>1/64 + 1/62 = <strong>0.0318</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Documents found by <strong>both</strong> retrievers (A, D) rise to the top. A document found by only one still gets in. No weights, no score normalization. <code>k</code> dampens the advantage of rank 1 over rank 2.</p>
+<h3 id="w4-63-how-the-code-does-it">6.3 How the code does it</h3>
+<p>On <code>main</code> this uses OpenSearch's <strong>native</strong> hybrid query plus a search pipeline. (The Week 4 README describes a manual fusion; the code later moved to native RRF, which needs OpenSearch ≥ 2.19.)</p>
+<pre><code class="language-python"># setup, once (client.py: _create_rrf_pipeline)
+PUT /_search/pipeline/hybrid-rrf-pipeline
+{ &quot;phase_results_processors&quot;: [ { &quot;score-ranker-processor&quot;:
+    { &quot;combination&quot;: { &quot;technique&quot;: &quot;rrf&quot;, &quot;rank_constant&quot;: 60 } } } ] }
+
+# query time (client.py: _search_hybrid_native)
+{ &quot;size&quot;: size,
+  &quot;query&quot;: { &quot;hybrid&quot;: { &quot;queries&quot;: [
+      &lt;the Week 3 BM25 bool/multi_match query, size*2&gt;,
+      { &quot;knn&quot;: { &quot;embedding&quot;: { &quot;vector&quot;: query_embedding, &quot;k&quot;: size*2 } } }
+  ]}}}
+?search_pipeline=hybrid-rrf-pipeline
+</code></pre>
+<p>Each sub-query fetches <code>2 × size</code> candidates (more candidates make fusion better), and RRF merges them down to <code>size</code>.</p>
+<p><strong>Mode selection</strong> in <code>search_unified</code>:</p>
+<pre><code>use_hybrid=False or no embedding  →  BM25 only (QueryBuilder, chunk mode)
+use_hybrid=True and embedding     →  native hybrid + RRF
+</code></pre>
+<p>and in the router:</p>
+<pre><code class="language-python">if request.use_hybrid:
+    try:    query_embedding = await embeddings_service.embed_query(request.query)
+    except: query_embedding = None        # → silently BM25
+</code></pre>
+<p>The response's <code>search_mode</code> field tells you what actually ran.</p>
+<hr />
+<h2 id="w4-7-hands-on">7. Hands-on</h2>
+<pre><code class="language-bash">git checkout week4.0 &amp;&amp; docker compose up --build -d
+# .env must contain a real JINA_API_KEY
+
+# Trigger the DAG in Airflow, then:
+curl localhost:9200/arxiv-papers-chunks/_count
+curl &quot;localhost:9200/arxiv-papers-chunks/_search?size=1&amp;_source_excludes=embedding&amp;pretty&quot;
+
+# BM25 only
+curl -X POST localhost:8000/api/v1/hybrid-search/ -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;mixture of experts routing&quot;, &quot;use_hybrid&quot;: false, &quot;size&quot;: 5}'
+
+# Hybrid
+curl -X POST localhost:8000/api/v1/hybrid-search/ -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;mixture of experts routing&quot;, &quot;use_hybrid&quot;: true, &quot;size&quot;: 5}'
+</code></pre>
+<p><strong>Experiment:</strong> write 10 queries of three kinds and compare BM25 against hybrid top-5:
+- exact-term (<code>"LoRA rank"</code>), paraphrase (<code>"making big models cheaper to fine-tune"</code>), and mixed.
+BM25 should win or tie on exact terms, hybrid should win clearly on paraphrases. This is the start of an evaluation set.</p>
+<hr />
+<h2 id="w4-8-design-decisions-and-trade-offs">8. Design decisions and trade-offs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Section-based chunks of variable size (100–800 words)</td>
+<td>Coherent passages, but uneven sizes; a 750-word chunk uses much more of the LLM's budget than a 150-word one</td>
+</tr>
+<tr>
+<td>Title+abstract header on every chunk</td>
+<td>Better retrieval and grounding; repeated tokens in index and prompt</td>
+</tr>
+<tr>
+<td>Hosted embeddings (Jina)</td>
+<td>High quality, no GPU needed; network latency on every query, an API key, and a dependency on an external service. A local <code>sentence-transformers</code> model is the alternative (the dependency is already in <code>pyproject.toml</code>).</td>
+</tr>
+<tr>
+<td>Single index for BM25 + kNN</td>
+<td>Simple and consistent; vectors make the index much larger than Week 3's</td>
+</tr>
+<tr>
+<td>RRF over weighted score fusion</td>
+<td>No tuning, robust; ignores <em>how much</em> better rank 1 is than rank 2. The commented-out <code>HYBRID_SEARCH_PIPELINE</code> in <code>index_config_hybrid.py</code> shows the weighted alternative.</td>
+</tr>
+<tr>
+<td><code>ef_construction=512, m=16</code></td>
+<td>High recall, slower indexing; fine at this scale</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><a id="w4-gotchas"></a></p>
+<h2 id="w4-9-gotchas">9. Gotchas</h2>
+<ol>
+<li><strong>🟡 Short texts crash the chunker.</strong> <code>chunk_text</code> calls <code>self._reconstruct_text(words, text)</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/indexing/text_chunker.py#L114">text_chunker.py:114</a>), but the method takes one argument. Any paper falling back to window mode with &lt; 100 words raises <code>TypeError</code> (caught per paper in <code>index_paper</code>, so that paper gets 0 chunks). Fix: <code>self._reconstruct_text(words)</code>.</li>
+<li><strong>No text, no chunks.</strong> If <code>raw_text</code> and <code>sections</code> are null (see the Week 2 parse bug), <code>paper_data.get("raw_text", ...)</code> returns <code>None</code>, <code>chunk_text</code> returns <code>[]</code>, and the paper is invisible to search. Check <code>_count</code> after every DAG run.</li>
+<li><strong><code>min_score</code> and RRF scores.</strong> RRF scores are tiny (the maximum with two lists and k=60 is about 2/61 ≈ 0.033). A <code>min_score</code> like <code>0.5</code> that makes sense for BM25 silently drops <strong>every</strong> hybrid result.</li>
+<li><strong><code>section_name</code> is always null.</strong> The API reads <code>hit.get("section_name")</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/hybrid_search.py#L59">hybrid_search.py:59</a>), but the index stores <code>section_title</code>. Rename one to match the other.</li>
+<li><strong><code>pdf_url</code> is always null in search hits.</strong> It isn't in the strict chunk mapping, so it's never indexed. Week 5 rebuilds the URL from <code>arxiv_id</code>.</li>
+<li><strong><code>total</code> in hybrid mode</strong> is the number of hits returned after <code>min_score</code> filtering, not the total number of matches.</li>
+<li><strong><code>nmslib</code> engine.</strong> Recent OpenSearch versions deprecate <code>nmslib</code> in favour of <code>faiss</code>/<code>lucene</code>. Fine on 2.19; plan a migration for newer versions.</li>
+<li><strong><code>refresh=True</code> on every bulk call</strong> makes docs searchable immediately (handy in notebooks) but is expensive at scale. Production pipelines usually refresh once per batch or rely on the refresh interval.</li>
+</ol>
+<hr />
+<h2 id="w4-10-success-checklist">10. Success checklist</h2>
+<ul>
+<li class="check"><input type="checkbox" disabled> <code>arxiv-papers-chunks</code> exists; <code>_count</code> &gt; 0; a sample doc has a 1024-length <code>embedding</code></li>
+<li class="check"><input type="checkbox" disabled> Chunks have sensible <code>section_title</code>s ("Introduction", "Method (Part 2)", "A + B + C")</li>
+<li class="check"><input type="checkbox" disabled> <code>hybrid-rrf-pipeline</code> exists: <code>GET /_search/pipeline/hybrid-rrf-pipeline</code></li>
+<li class="check"><input type="checkbox" disabled> <code>/hybrid-search/</code> returns <code>search_mode: "hybrid"</code> with a valid Jina key, and <code>"bm25"</code> without one</li>
+<li class="check"><input type="checkbox" disabled> You have a 10-query comparison showing where hybrid beats BM25</li>
+</ul>
+<hr />
+<h2 id="w4-11-self-check-questions">11. Self-check questions</h2>
+<ol>
+<li>Why does each chunk include the title and abstract? What does that cost?</li>
+<li>Walk through what happens to a 1,500-word "Experiments" section, and to a 40-word "Acknowledgements" section.</li>
+<li>Why use <code>retrieval.query</code> for queries and <code>retrieval.passage</code> for chunks?</li>
+<li>Compute the RRF score of a chunk ranked 2nd by BM25 and 5th by vector search (k=60).</li>
+<li>Why not just add the BM25 and cosine scores?</li>
+<li>What do HNSW's <code>m</code> and <code>ef_construction</code> control?</li>
+<li>Why is it acceptable, even good, to copy paper metadata into every chunk?</li>
+</ol>
+<hr />
+<h2 id="w4-12-whats-next">12. What's next</h2>
+<p>Retrieval now returns the right passages. <strong>Week 5</strong> gives them to a local LLM (Ollama) to generate cited answers, with a standard endpoint, a streaming endpoint, and a Gradio chat UI.</p></div><nav class="prevnext" aria-label="Week navigation"><a class="pn prev" href="#w3"><span>Previous</span>BM25 keyword search</a><a class="pn next" href="#w5"><span>Next</span>Complete RAG</a></nav></article><article class="page" id="w5" data-page="w5"><header class="post-head"><p class="eyebrow"><span class="tag">week5.0</span>Week 5</p><h1>The Complete RAG Pipeline: Retrieval Meets a Local LLM</h1></header><details class="toc" open><summary>On this page</summary><ol><li><a href="#w5-1-why-this-week-matters">Why this week matters</a></li><li><a href="#w5-2-what-you-build">What you build</a></li><li><a href="#w5-3-the-request-lifecycle">The request lifecycle</a></li><li><a href="#w5-4-concepts-and-code-walkthrough">Concepts and code walkthrough</a></li><li><a href="#w5-5-hands-on">Hands-on</a></li><li><a href="#w5-6-design-decisions-and-trade-offs">Design decisions and trade-offs</a></li><li><a href="#w5-7-gotchas">Gotchas</a></li><li><a href="#w5-8-success-checklist">Success checklist</a></li><li><a href="#w5-9-self-check-questions">Self-check questions</a></li><li><a href="#w5-10-whats-next">What&#x27;s next</a></li></ol></details><div class="prose"><blockquote class="lead"><p> Connect hybrid retrieval to a local LLM (Ollama + Llama 3.2) to produce cited answers, through a standard endpoint, a streaming endpoint and a Gradio chat UI, and make it fast by keeping the prompt small.</p>
+</blockquote>
+<p><strong>Tag:</strong> <code>week5.0</code> · <strong>Notebook:</strong> <code>notebooks/week5/week5_complete_rag_system.ipynb</code> · <strong>Original blog:</strong> <a href="https://jamwithai.substack.com/p/the-complete-rag-system">The Complete RAG System</a></p>
+<p><img alt="Week 5 architecture" src="../../static/week5_complete_rag.png" /></p>
+<blockquote>
+<p><strong>Heads-up:</strong> On <code>main</code>, <code>/api/v1/ask</code> and <code>/api/v1/stream</code> also contain Week 6 caching and tracing code, and that tracing code is currently broken (see <a href="#w6-gotchas">Week 6 Gotchas</a>). To run Week 5 as released: <code>git checkout week5.0</code>.</p>
+</blockquote>
+<hr />
+<h2 id="w5-1-why-this-week-matters">1. Why this week matters</h2>
+<p>Weeks 1–4 built a search engine. Week 5 makes it <strong>RAG</strong>: <strong>R</strong>etrieve passages, <strong>A</strong>ugment a prompt with them, <strong>G</strong>enerate an answer grounded in them.</p>
+<p>The LLM call is the easy part. The decisions that matter are:</p>
+<ul>
+<li><strong>What goes into the prompt</strong>, and what stays out. This drives both quality and latency.</li>
+<li><strong>How long the user waits.</strong> Local LLMs on CPU are slow, so streaming changes how the wait feels.</li>
+<li><strong>How you keep the model honest</strong>, through grounding instructions and citations.</li>
+</ul>
+<hr />
+<h2 id="w5-2-what-you-build">2. What you build</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>File</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RAG endpoints</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/ask.py">src/routers/ask.py</a></td>
+<td><code>POST /api/v1/ask</code> (full JSON) and <code>POST /api/v1/stream</code> (token stream)</td>
+</tr>
+<tr>
+<td>Shared retrieval helper</td>
+<td><code>_prepare_chunks_and_sources()</code> in <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/ask.py#L19-L76">ask.py:19-76</a></td>
+<td>embed → search → minimal chunks + deduplicated source URLs</td>
+</tr>
+<tr>
+<td><code>OllamaClient</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/ollama/client.py">src/services/ollama/client.py</a></td>
+<td><code>generate</code>, <code>generate_stream</code>, <code>generate_rag_answer(_stream)</code>, health, model list</td>
+</tr>
+<tr>
+<td><code>RAGPromptBuilder</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/ollama/prompts.py">src/services/ollama/prompts.py</a></td>
+<td>Assemble system prompt + context + question</td>
+</tr>
+<tr>
+<td>System prompt</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/ollama/prompts/rag_system.txt">src/services/ollama/prompts/rag_system.txt</a></td>
+<td>Grounding rules, length limit</td>
+</tr>
+<tr>
+<td>Request/response schemas</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/schemas/api/ask.py">src/schemas/api/ask.py</a></td>
+<td><code>AskRequest</code>, <code>AskResponse</code></td>
+</tr>
+<tr>
+<td>Gradio UI</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/gradio_app.py">src/gradio_app.py</a>, <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/gradio_launcher.py">gradio_launcher.py</a></td>
+<td>Chat UI on port 7861 calling the streaming API</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="w5-3-the-request-lifecycle">3. The request lifecycle</h2>
+<pre><code>POST /api/v1/ask  {&quot;query&quot;: &quot;...&quot;, &quot;top_k&quot;: 3, &quot;use_hybrid&quot;: true, &quot;model&quot;: &quot;llama3.2:1b&quot;, &quot;categories&quot;: [...]}
+   │
+   ├─ 1. embed query (Jina, task=retrieval.query)          ── fails? → BM25 only
+   ├─ 2. search_unified(size=top_k)                         ── Week 4 hybrid RRF
+   ├─ 3. keep only {arxiv_id, chunk_text} per hit           ── &quot;minimal context&quot;
+   │      sources = {https://arxiv.org/pdf/&lt;id&gt;.pdf}        ── deduplicated
+   ├─ 4. no chunks? → &quot;I couldn't find any relevant information…&quot;   (no LLM call)
+   ├─ 5. prompt = system prompt + numbered chunks + question
+   ├─ 6. Ollama /api/generate (temperature 0.7, top_p 0.9)
+   └─ 7. AskResponse {query, answer, sources, chunks_used, search_mode}
+</code></pre>
+<p>Step 4 is easy to miss: <strong>if retrieval finds nothing, don't call the LLM.</strong> That saves time and removes a common source of hallucinated answers.</p>
+<hr />
+<h2 id="w5-4-concepts-and-code-walkthrough">4. Concepts and code walkthrough</h2>
+<h3 id="w5-41-prompt-construction-less-is-faster">4.1 Prompt construction: less is faster</h3>
+<p><code>RAGPromptBuilder.create_rag_prompt</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/ollama/prompts.py#L34-L61">prompts.py:34-61</a>):</p>
+<pre><code>&lt;system prompt from rag_system.txt&gt;
+
+### Context from Papers:
+
+[1. arXiv:2508.12345v1]
+&lt;chunk text&gt;
+
+[2. arXiv:2508.67890v2]
+&lt;chunk text&gt;
+
+### Question:
+&lt;user query&gt;
+
+### Answer:
+Provide a natural, conversational response (not JSON) and cite sources using [arXiv:id] format.
+</code></pre>
+<p>The README's <strong>"80% prompt reduction / 6× faster (120s → 15–20s)"</strong> comes from this: the first version sent every hit's full metadata (authors, abstract, categories, scores, dates…) along with the chunk. The current version sends only <code>arxiv_id</code> + <code>chunk_text</code>.</p>
+<p>Why this matters so much for a local LLM:</p>
+<ul>
+<li>On CPU, <strong>prompt processing (prefill) time grows with prompt length</strong>, and you pay it before the first token appears.</li>
+<li>Small models (1B–3B parameters) get <em>worse</em> with noisy context: they latch onto irrelevant fields.</li>
+<li>Remember that Week 4 chunks already start with title + abstract, so the paper's metadata is in the chunk text anyway.</li>
+</ul>
+<p><strong>Budget math:</strong> <code>top_k=3</code> × ~600–800 words per chunk ≈ 2,000–2,500 words ≈ 3,000+ tokens. That's why <code>top_k</code> is capped at 10 and why it's the main latency knob:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Approx. response time (README benchmarks)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>top_k=1</code>, BM25</td>
+<td>~2–3 s</td>
+</tr>
+<tr>
+<td><code>top_k=3</code>, hybrid</td>
+<td>~15–20 s</td>
+</tr>
+<tr>
+<td><code>top_k=5</code>, hybrid</td>
+<td>~25–30 s</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="w5-42-the-system-prompt-grounding">4.2 The system prompt: grounding</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/ollama/prompts/rag_system.txt">rag_system.txt</a> tells the model to:</p>
+<ul>
+<li>answer <strong>only</strong> from the excerpts, and say so when they're insufficient,</li>
+<li>cite papers by arXiv ID,</li>
+<li>stay short (word limits),</li>
+<li>skip preambles like "Here's the answer".</li>
+</ul>
+<p>These are the basic anti-hallucination tools: <em>restrict the knowledge source, give it a way to say "I don't know", require citations.</em></p>
+<h3 id="w5-43-the-ollama-api">4.3 The Ollama API</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/ollama/client.py">ollama/client.py</a> talks to Ollama's REST API at <code>OLLAMA_HOST</code> (<code>http://ollama:11434</code> inside Docker):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/version</code></td>
+<td>Health check</td>
+</tr>
+<tr>
+<td><code>GET /api/tags</code></td>
+<td>List installed models</td>
+</tr>
+<tr>
+<td><code>POST /api/generate</code> (<code>stream: false</code>)</td>
+<td>One JSON response with <code>response</code>, plus metrics</td>
+</tr>
+<tr>
+<td><code>POST /api/generate</code> (<code>stream: true</code>)</td>
+<td><strong>NDJSON</strong> stream: one JSON object per line, <code>{"response": "tok", "done": false}</code> … <code>{"done": true, ...}</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>generate()</code> also turns Ollama's metrics into usage metadata for Week 6:
+<code>prompt_eval_count</code> → prompt tokens, <code>eval_count</code> → completion tokens, <code>total_duration</code> (nanoseconds) → <code>latency_ms</code>. Compare <code>prompt_eval_duration</code> with <code>eval_duration</code> to see whether prefill or generation is your bottleneck.</p>
+<p><strong>Structured output (optional path).</strong> <code>create_structured_prompt</code> + <code>format=RAGResponse.model_json_schema()</code> asks Ollama to constrain output to a JSON schema, and <code>ResponseParser</code> validates it with Pydantic, with a regex fallback. The endpoints use the <strong>plain-text</strong> path (<code>use_structured_output=False</code>) because small models write better prose than JSON, and JSON can't be streamed nicely.</p>
+<h3 id="w5-44-streaming">4.4 Streaming</h3>
+<p><code>POST /api/v1/stream</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/ask.py#L170-L273">ask.py:170-273</a>) returns a <code>StreamingResponse</code> from an async generator that emits <strong>Server-Sent-Events-style frames</strong>:</p>
+<pre><code>data: {&quot;sources&quot;: [...], &quot;chunks_used&quot;: 3, &quot;search_mode&quot;: &quot;hybrid&quot;}     ← metadata first
+
+data: {&quot;chunk&quot;: &quot;Transformers&quot;}
+data: {&quot;chunk&quot;: &quot; use&quot;}
+data: {&quot;chunk&quot;: &quot; self-attention&quot;}
+...
+data: {&quot;answer&quot;: &quot;&lt;full text&gt;&quot;, &quot;done&quot;: true}                            ← completion signal
+</code></pre>
+<ul>
+<li><strong>Metadata first</strong>, so the UI can show sources while the answer is still generating.</li>
+<li><strong>Time to first token ≈ 2–3 s</strong> against ~15–20 s for the full answer. Total time is the same, but the user sees progress straight away.</li>
+<li>Errors inside the generator become a <code>data: {"error": ...}</code> frame. Once streaming has started you can't change the HTTP status code.</li>
+</ul>
+<p>Test it with <code>curl --no-buffer</code> (section 5).</p>
+<h3 id="w5-45-two-endpoints-shared-code">4.5 Two endpoints, shared code</h3>
+<p><code>/ask</code> and <code>/stream</code> both call <code>_prepare_chunks_and_sources</code> and <code>RAGPromptBuilder</code>, so retrieval and prompting behave identically and only delivery differs. Clients choose: batch jobs and integrations use <code>/ask</code>, interactive UIs use <code>/stream</code>.</p>
+<h3 id="w5-46-gradio-ui">4.6 Gradio UI</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/gradio_app.py">gradio_app.py</a> is a separate process that calls <code>http://localhost:8000/api/v1/stream</code> and renders the tokens as they arrive. Controls: <code>top_k</code>, hybrid on/off, model, categories. Launch it with <code>uv run python gradio_launcher.py</code> → http://localhost:7861.</p>
+<p>The UI is a <strong>client of the API</strong>, not part of it. You could swap Gradio for React, Slack or Telegram (Week 7 does exactly that) without touching the RAG code.</p>
+<hr />
+<h2 id="w5-5-hands-on">5. Hands-on</h2>
+<pre><code class="language-bash">git checkout week5.0 &amp;&amp; docker compose up --build -d
+
+# Pull a model into the Ollama container (first time only)
+docker exec rag-ollama ollama pull llama3.2:1b
+docker exec rag-ollama ollama list
+
+# Standard RAG
+curl -X POST localhost:8000/api/v1/ask -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;What are the main approaches to reducing LLM hallucination?&quot;, &quot;top_k&quot;: 3, &quot;use_hybrid&quot;: true}'
+
+# Streaming
+curl --no-buffer -X POST localhost:8000/api/v1/stream -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;Explain attention mechanisms&quot;, &quot;top_k&quot;: 2}'
+
+# UI
+uv run python gradio_launcher.py   # → http://localhost:7861
+</code></pre>
+<p><strong>Experiments:</strong>
+1. Same question with <code>top_k</code> = 1, 3, 5: compare latency and answer quality.
+2. Ask something the corpus can't answer ("What's the capital of France?"). Does the model refuse, or answer from its own knowledge?
+3. Swap <code>llama3.2:1b</code> for <code>llama3.2:3b</code> (pull it first): how much better is it, and how much slower?</p>
+<hr />
+<h2 id="w5-6-design-decisions-and-trade-offs">6. Design decisions and trade-offs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local LLM (Ollama)</td>
+<td>Private, free, offline; slow on CPU, and small models follow instructions less reliably than hosted frontier models</td>
+</tr>
+<tr>
+<td>Minimal context (ID + text only)</td>
+<td>Much faster prefill, less noise; the model can't cite titles unless they're in the chunk text (they are, through the Week 4 header)</td>
+</tr>
+<tr>
+<td>Sources = every retrieved paper</td>
+<td>Simple and always populated; lists papers even if the model didn't use them</td>
+</tr>
+<tr>
+<td><code>temperature=0.7</code></td>
+<td>More natural prose; more variation and more room for drifting from the context. Grounded QA often uses 0–0.3.</td>
+</tr>
+<tr>
+<td>SSE-style streaming over plain HTTP</td>
+<td>Works with <code>fetch</code>/<code>httpx</code>/curl; one-way only (no cancel signal from the client mid-generation)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><a id="w5-gotchas"></a></p>
+<h2 id="w5-7-gotchas">7. Gotchas</h2>
+<ol>
+<li><strong>The system prompt contradicts itself.</strong> It says "LIMIT YOUR RESPONSE TO 300 WORDS" and then "Keep it less than 200 words". It ends with "NEVER add introductory phrases … before your JSON response", while the builder asks for "a natural, conversational response (not JSON)". Small models are sensitive to conflicting instructions. Cleaning this up is a quick quality win.</li>
+<li><strong><code>search_mode</code> can be wrong.</strong> <code>/ask</code> reports <code>"hybrid"</code> whenever <code>request.use_hybrid</code> is true (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/ask.py#L151">ask.py:151</a>), even if embedding failed and it fell back to BM25. The <code>/hybrid-search</code> router does this correctly by checking <code>query_embedding</code>.</li>
+<li><strong>Pull the model first.</strong> A fresh Ollama container has no models, and <code>/ask</code> fails until you run <code>ollama pull llama3.2:1b</code>.</li>
+<li><strong><code>OLLAMA_TIMEOUT=300</code>.</strong> Big models or big <code>top_k</code> on CPU can genuinely take minutes. Timeouts raise <code>OllamaTimeoutError</code>.</li>
+<li><strong><code>/stream</code> uses <code>media_type="text/plain"</code></strong>, not <code>text/event-stream</code>. Fine for the Gradio client and curl, but browser <code>EventSource</code> expects <code>text/event-stream</code>.</li>
+<li><strong>Citations aren't verified.</strong> Nothing checks that the <code>[arXiv:id]</code> tags in the answer match retrieved chunks. A follow-up exercise: parse the cited IDs and drop or flag any that weren't in the context.</li>
+</ol>
+<hr />
+<h2 id="w5-8-success-checklist">8. Success checklist</h2>
+<ul>
+<li class="check"><input type="checkbox" disabled> <code>docker exec rag-ollama ollama list</code> shows <code>llama3.2:1b</code></li>
+<li class="check"><input type="checkbox" disabled> <code>/api/v1/ask</code> returns an answer with <code>sources</code> as arXiv PDF URLs</li>
+<li class="check"><input type="checkbox" disabled> <code>/api/v1/stream</code> prints tokens progressively with <code>curl --no-buffer</code></li>
+<li class="check"><input type="checkbox" disabled> An unanswerable query gets a "not enough information" style reply, or a "no relevant information" reply with no LLM call</li>
+<li class="check"><input type="checkbox" disabled> Gradio UI works at http://localhost:7861</li>
+<li class="check"><input type="checkbox" disabled> You've measured latency at <code>top_k</code> 1/3/5 yourself</li>
+</ul>
+<hr />
+<h2 id="w5-9-self-check-questions">9. Self-check questions</h2>
+<ol>
+<li>What are the R, A and G steps, and which file does each happen in?</li>
+<li>Why did removing metadata from the prompt make the system ~6× faster on a local model?</li>
+<li>Why does <code>/stream</code> send <code>sources</code> <em>before</em> any answer tokens?</li>
+<li>Why skip the LLM call entirely when retrieval returns no chunks?</li>
+<li>What's the difference between <code>prompt_eval_duration</code> and <code>eval_duration</code>, and which one does <code>top_k</code> mostly affect?</li>
+<li>Why is the Gradio app a separate process calling the API instead of importing the RAG code directly?</li>
+<li>Name three prompt-level techniques that reduce hallucination.</li>
+</ol>
+<hr />
+<h2 id="w5-10-whats-next">10. What's next</h2>
+<p>The system works but you can't see inside it. Which step is slow? What did the model actually see? It also redoes the full 15-second pipeline for a question it answered a minute ago. <strong>Week 6</strong> adds <strong>Langfuse</strong> tracing for every step and a <strong>Redis</strong> cache that answers repeated questions in milliseconds.</p></div><nav class="prevnext" aria-label="Week navigation"><a class="pn prev" href="#w4"><span>Previous</span>Chunking + hybrid search</a><a class="pn next" href="#w6"><span>Next</span>Monitoring + caching</a></nav></article><article class="page" id="w6" data-page="w6"><header class="post-head"><p class="eyebrow"><span class="tag">week6.0</span>Week 6</p><h1>Production Monitoring and Caching: Langfuse + Redis</h1></header><details class="toc" open><summary>On this page</summary><ol><li><a href="#w6-1-why-this-week-matters">Why this week matters</a></li><li><a href="#w6-2-what-you-build">What you build</a></li><li><a href="#w6-3-the-new-request-flow">The new request flow</a></li><li><a href="#w6-4-caching-with-redis">Caching with Redis</a></li><li><a href="#w6-5-observability-with-langfuse">Observability with Langfuse</a></li><li><a href="#w6-6-hands-on">Hands-on</a></li><li><a href="#w6-7-design-decisions-and-trade-offs">Design decisions and trade-offs</a></li><li><a href="#w6-8-gotchas">Gotchas</a></li><li><a href="#w6-9-success-checklist">Success checklist</a></li><li><a href="#w6-10-self-check-questions">Self-check questions</a></li><li><a href="#w6-11-whats-next">What&#x27;s next</a></li></ol></details><div class="prose"><blockquote class="lead"><p> Wrap every step of the RAG pipeline in Langfuse traces so you can see latency, prompts and outputs per request, and put a Redis exact-match cache in front so a repeated question returns in ~100 ms instead of ~15 s.</p>
+</blockquote>
+<p><strong>Tag:</strong> <code>week6.0</code> · <strong>Notebook:</strong> <code>notebooks/week6/week6_cache_testing.ipynb</code> · <strong>Original blog:</strong> <a href="https://jamwithai.substack.com/p/production-ready-rag-monitoring-and">Production-ready RAG: Monitoring &amp; Caching</a></p>
+<p><img alt="Week 6 architecture" src="../../static/week6_monitoring_and_caching.png" /></p>
+<blockquote>
+<p><strong>Heads-up:</strong> The Week 6 tracing code works at <code>week6.0</code> but <strong>breaks on <code>main</code></strong>: the Week 7 commit rewrote <code>LangfuseTracer</code> and dropped methods <code>RAGTracer</code> still calls. Study and run this week with <code>git checkout week6.0</code>. Details in <a href="#w6-gotchas">Gotchas</a>.</p>
+</blockquote>
+<hr />
+<h2 id="w6-1-why-this-week-matters">1. Why this week matters</h2>
+<p>A demo works until someone asks "why was that answer wrong?" or "why did it take 40 seconds?". Without observability you're guessing. And an LLM pipeline is expensive, so recomputing identical answers wastes time and money.</p>
+<p>Week 6 adds two production basics:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Tool</th>
+<th>What you get</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Observability</strong></td>
+<td>Langfuse (self-hosted, open source)</td>
+<td>A trace per request with spans for embedding, search, prompt building and generation, plus the actual prompt and answer for debugging</td>
+</tr>
+<tr>
+<td><strong>Performance</strong></td>
+<td>Redis</td>
+<td>Exact-match response cache: ~15–20 s → ~50–100 ms on a hit (150–400×)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Both follow one rule: <strong>they must never break the request.</strong> If tracing or caching fails, the user still gets an answer.</p>
+<hr />
+<h2 id="w6-2-what-you-build">2. What you build</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>File</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LangfuseTracer</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/langfuse/client.py">src/services/langfuse/client.py</a></td>
+<td>Wraps the Langfuse SDK; no-ops when disabled</td>
+</tr>
+<tr>
+<td><code>RAGTracer</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/langfuse/tracer.py">src/services/langfuse/tracer.py</a></td>
+<td>RAG-specific context managers: <code>trace_request</code>, <code>trace_embedding</code>, <code>trace_search</code>, <code>trace_prompt_construction</code>, <code>trace_generation</code></td>
+</tr>
+<tr>
+<td><code>CacheClient</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/cache/client.py">src/services/cache/client.py</a></td>
+<td><code>find_cached_response</code>, <code>store_response</code></td>
+</tr>
+<tr>
+<td>Redis factory</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/cache/factory.py">src/services/cache/factory.py</a></td>
+<td>Connection with timeouts and retry-on-error</td>
+</tr>
+<tr>
+<td>Updated endpoints</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/ask.py">src/routers/ask.py</a></td>
+<td>Cache check → traced pipeline → cache store</td>
+</tr>
+<tr>
+<td>Compose services</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/compose.yml">compose.yml</a></td>
+<td><code>redis</code>, plus the Langfuse v3 stack: <code>langfuse-web</code>, <code>langfuse-worker</code>, <code>langfuse-postgres</code>, <code>langfuse-redis</code>, <code>langfuse-minio</code>, <code>clickhouse</code></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="w6-3-the-new-request-flow">3. The new request flow</h2>
+<pre><code>POST /api/v1/ask
+  │
+  ├─ trace_request(user_id, query)  ─────────────────────────── Langfuse trace (root)
+  │    │
+  │    ├─ cache.find_cached_response(request)
+  │    │     HIT  → return cached AskResponse            (~50–100 ms)
+  │    │     MISS ↓
+  │    ├─ span &quot;query_embedding&quot;      {query_length, embedding_duration_ms}
+  │    ├─ span &quot;search_retrieval&quot;     {top_k → chunks_returned, unique_papers, arxiv_ids}
+  │    ├─ span &quot;prompt_construction&quot;  {chunk_count → prompt_length, prompt_preview}
+  │    ├─ span &quot;llm_generation&quot;       {model, prompt → response, response_length}
+  │    ├─ trace.update(answer, total_duration_seconds)
+  │    └─ cache.store_response(request, response)    (TTL)
+  │
+  └─ flush traces
+</code></pre>
+<hr />
+<h2 id="w6-4-caching-with-redis">4. Caching with Redis</h2>
+<h3 id="w6-41-the-cache-key">4.1 The cache key</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/cache/client.py#L22-L33">cache/client.py:22-33</a>:</p>
+<pre><code class="language-python">key_data = {
+    &quot;query&quot;:      request.query,
+    &quot;model&quot;:      request.model,
+    &quot;top_k&quot;:      request.top_k,
+    &quot;use_hybrid&quot;: request.use_hybrid,
+    &quot;categories&quot;: sorted(request.categories) if request.categories else [],
+}
+key_string = json.dumps(key_data, sort_keys=True)
+key = &quot;exact_cache:&quot; + sha256(key_string).hexdigest()[:16]
+</code></pre>
+<p>Details that matter:</p>
+<ul>
+<li><strong>Every parameter that changes the answer is in the key.</strong> The same question with <code>top_k=5</code> or a different model is a different answer, so it gets a different key. Forget one and users get answers computed with someone else's settings.</li>
+<li><strong>Canonicalization:</strong> <code>sorted(categories)</code> and <code>sort_keys=True</code>, so <code>["cs.LG","cs.AI"]</code> and <code>["cs.AI","cs.LG"]</code> hit the same entry.</li>
+<li><strong>Hashing</strong> gives fixed-length keys whatever the query length. 16 hex chars = 64 bits, so collisions are negligible at this scale.</li>
+<li><strong>Namespace prefix</strong> <code>exact_cache:</code> lets you find or flush all cache keys (<code>SCAN 0 MATCH exact_cache:*</code>).</li>
+</ul>
+<h3 id="w6-42-ttl-and-staleness">4.2 TTL and staleness</h3>
+<p><code>redis.set(key, response.model_dump_json(), ex=ttl)</code> with <code>REDIS__TTL_HOURS</code> (6 in <code>.env.example</code> and <code>config.py</code>; the notebook README says 24).</p>
+<p>TTL is your <strong>staleness budget</strong>. New papers arrive every weekday, so a cached answer to "latest work on X" can miss today's papers until it expires. Shorter TTL means fresher answers and fewer hits. Another option is invalidating on ingestion (flush <code>exact_cache:*</code> when the DAG finishes).</p>
+<h3 id="w6-43-exact-vs-semantic-caching">4.3 Exact vs semantic caching</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Exact match (this week)</th>
+<th>Semantic cache (future)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hit condition</td>
+<td>Identical query string + params</td>
+<td>Query embedding within a similarity threshold of a cached one</td>
+</tr>
+<tr>
+<td>"What is RAG?" vs "what is RAG?"</td>
+<td><strong>Miss</strong> (case differs)</td>
+<td>Hit</td>
+</tr>
+<tr>
+<td>Risk of wrong answer</td>
+<td>None</td>
+<td>False hits: "pros of X" vs "cons of X" can be very close in embedding space</td>
+</tr>
+<tr>
+<td>Cost per lookup</td>
+<td>One <code>GET</code>, O(1)</td>
+<td>An embedding call + vector search</td>
+</tr>
+</tbody>
+</table></div>
+<p>Start with exact match because it's simple and never wrong. A cheap improvement is to normalize the query before hashing (lowercase, trim, collapse whitespace).</p>
+<h3 id="w6-44-graceful-degradation">4.4 Graceful degradation</h3>
+<pre><code class="language-python">if cache_client:
+    try:
+        cached = await cache_client.find_cached_response(request)
+        if cached: return cached
+    except Exception as e:
+        logger.warning(f&quot;Cache check failed, proceeding with normal flow: {e}&quot;)
+</code></pre>
+<p>Inside <code>CacheClient</code>, every Redis error is caught and returns <code>None</code>/<code>False</code>. A dead cache costs speed, not availability.</p>
+<h3 id="w6-45-streaming-and-the-cache">4.5 Streaming and the cache</h3>
+<p>On a hit, <code>/stream</code> <strong>replays</strong> the cached answer: metadata frame, then the answer split into words as <code>chunk</code> frames, then <code>done</code>. The client code is the same for hits and misses.</p>
+<hr />
+<h2 id="w6-5-observability-with-langfuse">5. Observability with Langfuse</h2>
+<h3 id="w6-51-traces-spans-generations">5.1 Traces, spans, generations</h3>
+<ul>
+<li><strong>Trace</strong> = one user request (root).</li>
+<li><strong>Span</strong> = a timed step inside it (embedding, search, prompt building).</li>
+<li><strong>Generation</strong> = a span specific to LLM calls (model, prompt, completion, token usage).</li>
+</ul>
+<p>In the Langfuse UI each request appears as a timeline, so you can see at a glance that, say, 1.8 s went to the Jina call and 14 s to generation.</p>
+<h3 id="w6-52-the-ragtracer-pattern">5.2 The <code>RAGTracer</code> pattern</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/langfuse/tracer.py">tracer.py</a> wraps each step in a <strong>context manager</strong>:</p>
+<pre><code class="language-python">with rag_tracer.trace_search(trace, request.query, request.top_k) as search_span:
+    results = opensearch_client.search_unified(...)
+    rag_tracer.end_search(search_span, chunks, arxiv_ids, results[&quot;total&quot;])
+</code></pre>
+<ul>
+<li>Timing and <code>span.end()</code> live in <code>finally</code>, so a span closes even if the step throws.</li>
+<li>Every helper checks <code>if span:</code> / <code>if not trace: return</code>. When Langfuse is disabled the wrappers are no-ops, and the business code doesn't contain a single <code>if langfuse_enabled</code>.</li>
+<li>Only useful data is logged: counts, IDs, lengths, and the full prompt <strong>once</strong> (in <code>llm_generation</code>, with a preview in <code>prompt_construction</code>).</li>
+</ul>
+<h3 id="w6-53-what-to-look-at-in-the-dashboard">5.3 What to look at in the dashboard</h3>
+<ol>
+<li><strong>Latency breakdown</strong> per span. Is it retrieval, embedding or generation?</li>
+<li><strong>The exact prompt</strong> for a bad answer. Did retrieval bring the right chunks? Usually it didn't, and that's a retrieval bug, not an LLM bug.</li>
+<li><strong>Token usage</strong> per generation (from Ollama's <code>prompt_eval_count</code> / <code>eval_count</code>).</li>
+<li><strong>Trends:</strong> p50/p95 latency over time, error rate, most frequent queries (good candidates for the cache).</li>
+</ol>
+<h3 id="w6-54-setup">5.4 Setup</h3>
+<pre><code class="language-bash">docker compose up --build -d          # starts the Langfuse stack as well
+open http://localhost:3001            # Langfuse UI (host port 3001 → container 3000)
+# create an account → project → API keys, then put them in .env:
+LANGFUSE__PUBLIC_KEY=pk-lf-...
+LANGFUSE__SECRET_KEY=sk-lf-...
+LANGFUSE__HOST=http://langfuse-web:3000   # from inside Docker
+docker compose restart api
+</code></pre>
+<p>Note the <strong>double underscore</strong>; see Gotcha 2.</p>
+<hr />
+<h2 id="w6-6-hands-on">6. Hands-on</h2>
+<pre><code class="language-bash">git checkout week6.0 &amp;&amp; docker compose up --build -d
+
+# Miss, then hit: compare the timings
+time curl -s -X POST localhost:8000/api/v1/ask -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;What are transformers?&quot;, &quot;top_k&quot;: 3}' &gt; /dev/null
+time curl -s -X POST localhost:8000/api/v1/ask -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;What are transformers?&quot;, &quot;top_k&quot;: 3}' &gt; /dev/null
+
+# Same question, different params → miss again
+time curl -s -X POST localhost:8000/api/v1/ask -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;What are transformers?&quot;, &quot;top_k&quot;: 4}' &gt; /dev/null
+
+# Look inside Redis
+docker exec rag-redis redis-cli --scan --pattern 'exact_cache:*'
+docker exec rag-redis redis-cli TTL &lt;one-of-the-keys&gt;
+
+# Kill Redis: the API should still answer (slowly)
+docker stop rag-redis
+curl -X POST localhost:8000/api/v1/ask -H 'Content-Type: application/json' -d '{&quot;query&quot;: &quot;What is RLHF?&quot;}'
+docker start rag-redis
+</code></pre>
+<p>Then open the Langfuse UI, find the three traces, and compare their span timings.</p>
+<hr />
+<h2 id="w6-7-design-decisions-and-trade-offs">7. Design decisions and trade-offs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cache the <strong>final response</strong> (not embeddings or search results)</td>
+<td>Biggest win per hit; any parameter change is a full miss. Caching query embeddings separately would also speed up misses.</td>
+</tr>
+<tr>
+<td>Exact-match keys</td>
+<td>Zero false hits; low hit rate for paraphrases</td>
+</tr>
+<tr>
+<td>TTL-based expiry</td>
+<td>Simple; answers can be stale for up to a TTL after new papers arrive</td>
+</tr>
+<tr>
+<td>Self-hosted Langfuse</td>
+<td>Data stays local, free; adds 6 containers (ClickHouse, MinIO, …) and RAM</td>
+</tr>
+<tr>
+<td>Log full prompts and answers</td>
+<td>Easy to debug; consider PII and data retention in a real deployment</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><a id="w6-gotchas"></a></p>
+<h2 id="w6-8-gotchas">8. Gotchas</h2>
+<ol>
+<li><strong>🔴 <code>/ask</code> and <code>/stream</code> crash on <code>main</code>.</strong> <code>RAGTracer.trace_request</code> calls <code>self.tracer.trace_rag_request(...)</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/langfuse/tracer.py#L21">tracer.py:21</a>) and the other helpers call <code>self.tracer.create_span(...)</code>. Those methods existed at <code>week6.0</code>, but the Week 7 commit (<code>99aeed6</code>) rewrote <code>LangfuseTracer</code> for the Langfuse v3 SDK and <strong>removed them</strong>. The <code>try/finally</code> in <code>trace_request</code> doesn't catch the <code>AttributeError</code>, so both endpoints fail with 500 (streaming sends an <code>error</code> frame), whether or not Langfuse is enabled.
+   <strong>Fix options:</strong> restore <code>trace_rag_request</code>, <code>create_span</code> and <code>end_span</code> on <code>LangfuseTracer</code> as v3 wrappers (e.g. on top of <code>start_as_current_span</code>), or make <code>RAGTracer</code> use the new <code>start_span</code>/<code>update_span</code> API. The branch <code>origin/feature/deepseek-ocr-integration</code> still has the old methods, which helps as a reference.</li>
+<li><strong>🟠 Langfuse keys are silently ignored.</strong> <code>.env.example</code> uses <code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code> and <code>LANGFUSE_HOST</code> (single underscore), but <code>LangfuseSettings</code> reads the prefix <strong><code>LANGFUSE__</code></strong> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/config.py#L108">config.py:108</a>). With the example file copied as-is, keys are empty and the log says "Langfuse tracing disabled or missing credentials". Rename to <code>LANGFUSE__PUBLIC_KEY</code>, etc. (The <code>compose.yml</code> <code>LANGFUSE_HOST</code> env var has the same problem.)</li>
+<li><strong>The Langfuse UI is on port 3001</strong>, not 3000 as the top-level README says (<code>"3001:3000"</code> in <code>compose.yml</code>).</li>
+<li><strong>Redis down at startup = API down.</strong> <code>make_redis_client</code> pings and <strong>raises</strong> if Redis is unreachable, and <code>main.py</code> doesn't catch it. The <em>runtime</em> degradation is graceful but startup isn't. Wrapping <code>make_cache_client</code> in <code>try/except</code> and setting <code>app.state.cache_client = None</code> would fix it (the <code>CacheDep</code> type is already <code>CacheClient | None</code>).</li>
+<li><strong>Sync Redis inside async code.</strong> <code>CacheClient</code> uses the synchronous <code>redis.Redis</code> inside <code>async def</code> methods, so each call briefly blocks the event loop. <code>redis.asyncio.Redis</code> is the drop-in fix.</li>
+<li><strong>Case and whitespace break the cache.</strong> <code>"What is RAG?"</code> and <code>"what is rag? "</code> are different keys.</li>
+</ol>
+<hr />
+<h2 id="w6-9-success-checklist">9. Success checklist</h2>
+<ul>
+<li class="check"><input type="checkbox" disabled> The second identical <code>/ask</code> request is under 200 ms; changing <code>top_k</code> causes a miss</li>
+<li class="check"><input type="checkbox" disabled> <code>redis-cli --scan --pattern 'exact_cache:*'</code> shows keys with a positive TTL</li>
+<li class="check"><input type="checkbox" disabled> Stopping Redis mid-run doesn't break <code>/ask</code></li>
+<li class="check"><input type="checkbox" disabled> Langfuse shows one trace per request with the four spans and their timings</li>
+<li class="check"><input type="checkbox" disabled> You can find the full prompt of a specific request in Langfuse</li>
+<li class="check"><input type="checkbox" disabled> (On <code>main</code>) you've fixed or worked around Gotchas 1–2</li>
+</ul>
+<hr />
+<h2 id="w6-10-self-check-questions">10. Self-check questions</h2>
+<ol>
+<li>Why must <code>model</code>, <code>top_k</code>, <code>use_hybrid</code> and <code>categories</code> be part of the cache key?</li>
+<li>Why sort <code>categories</code> and use <code>sort_keys=True</code> before hashing?</li>
+<li>What does TTL trade off in a system that ingests new papers every day?</li>
+<li>Give an example where a semantic cache would return a <em>wrong</em> answer.</li>
+<li>What's the difference between a trace, a span and a generation in Langfuse?</li>
+<li>Why do the tracing helpers close spans in <code>finally</code>?</li>
+<li>A user reports a bad answer. Which spans would you check first, and what would you look for?</li>
+</ol>
+<hr />
+<h2 id="w6-11-whats-next">11. What's next</h2>
+<p>The pipeline is fast and observable but always does the same thing: retrieve once, generate once, whether the question is on-topic or not, and whether the retrieved chunks are relevant or not. <strong>Week 7</strong> turns it into an <strong>agent</strong> with LangGraph: it validates the question, grades what it retrieved, rewrites the query when retrieval misses, and answers through a Telegram bot.</p></div><nav class="prevnext" aria-label="Week navigation"><a class="pn prev" href="#w5"><span>Previous</span>Complete RAG</a><a class="pn next" href="#w7"><span>Next</span>Agentic RAG + Telegram</a></nav></article><article class="page" id="w7" data-page="w7"><header class="post-head"><p class="eyebrow"><span class="tag">week7.0</span>Week 7</p><h1>Agentic RAG with LangGraph, plus a Telegram Bot</h1></header><details class="toc" open><summary>On this page</summary><ol><li><a href="#w7-1-why-this-week-matters">Why this week matters</a></li><li><a href="#w7-2-what-you-build">What you build</a></li><li><a href="#w7-3-the-graph">The graph</a></li><li><a href="#w7-4-concepts">Concepts</a></li><li><a href="#w7-5-hands-on">Hands-on</a></li><li><a href="#w7-6-design-decisions-and-trade-offs">Design decisions and trade-offs</a></li><li><a href="#w7-7-gotchas">Gotchas</a></li><li><a href="#w7-8-success-checklist">Success checklist</a></li><li><a href="#w7-9-self-check-questions">Self-check questions</a></li><li><a href="#w7-10-where-to-go-from-here">Where to go from here</a></li></ol></details><div class="prose"><blockquote class="lead"><p> Replace "always retrieve once, then generate" with a LangGraph state machine that <strong>validates</strong> the question, <strong>retrieves</strong>, <strong>grades</strong> what it found, <strong>rewrites</strong> the query and retries if needed, then answers. Add a Telegram bot as a second front-end.</p>
+</blockquote>
+<p><strong>Tag:</strong> <code>week7.0</code> · <strong>Notebook:</strong> <code>notebooks/week7/week7_agentic_rag.ipynb</code> · <strong>Original blog:</strong> <a href="https://jamwithai.substack.com/p/agentic-rag-with-langgraph-and-telegram">Agentic RAG with LangGraph and Telegram</a></p>
+<p><img alt="Week 7 architecture" src="../../static/week7_telegram_and_agentic_ai.png" /></p>
+<blockquote>
+<p><strong>Heads-up:</strong> The notebook README describes a slightly different design from the code (a <code>generate_query_or_respond</code> node that answers simple questions directly, Telegram <code>/settings</code> keyboards, a <code>user_manager</code>). These notes describe <strong>what the code actually does</strong>. Also read <a href="#w7-gotchas">Gotchas</a> before running: on <code>main</code> the agent's LLM calls fail and every query ends up "out of scope".</p>
+</blockquote>
+<hr />
+<h2 id="w7-1-why-this-week-matters">1. Why this week matters</h2>
+<p>The Week 5–6 pipeline is a fixed line: <code>retrieve → generate</code>. That has three failure modes:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Example</th>
+<th>Traditional RAG</th>
+<th>Agentic RAG</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Off-topic question</td>
+<td>"What's a good pasta recipe?"</td>
+<td>Retrieves random CS papers and makes something up from them</td>
+<td><strong>Guardrail</strong> rejects it politely</td>
+</tr>
+<tr>
+<td>Retrieval misses</td>
+<td>"Tell me about ML stuff"</td>
+<td>Answers from irrelevant chunks</td>
+<td><strong>Grader</strong> notices, <strong>rewriter</strong> reformulates, retrieves again</td>
+</tr>
+<tr>
+<td>No good evidence at all</td>
+<td>Topic not in the corpus</td>
+<td>Confident but wrong answer</td>
+<td>Gives up after N attempts with an honest message</td>
+</tr>
+</tbody>
+</table></div>
+<p>"Agentic" here means <strong>the pipeline makes decisions at runtime based on intermediate results</strong>. It isn't an open-ended autonomous agent. It's a small, explicit <strong>state machine</strong> whose branch points are LLM judgments. Most production "agents" look like this.</p>
+<hr />
+<h2 id="w7-2-what-you-build">2. What you build</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>File</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AgenticRAGService</code></td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/agentic_rag.py">src/services/agents/agentic_rag.py</a></td>
+<td>Builds and compiles the graph; <code>ask()</code> runs it, wraps it in a Langfuse trace, extracts results</td>
+</tr>
+<tr>
+<td>State</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/state.py">src/services/agents/state.py</a></td>
+<td><code>AgentState</code> TypedDict: what changes as the graph runs</td>
+</tr>
+<tr>
+<td>Context</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/context.py">src/services/agents/context.py</a></td>
+<td><code>Context</code> dataclass: dependencies and settings that <em>don't</em> change</td>
+</tr>
+<tr>
+<td>Config</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/config.py">src/services/agents/config.py</a></td>
+<td><code>GraphConfig</code>: <code>max_retrieval_attempts=2</code>, <code>guardrail_threshold=60</code>, <code>model</code>, <code>top_k=3</code>, …</td>
+</tr>
+<tr>
+<td>Nodes</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/tree/main/src/services/agents/nodes">src/services/agents/nodes/</a></td>
+<td><code>guardrail</code>, <code>out_of_scope</code>, <code>retrieve</code>, <code>grade_documents</code>, <code>rewrite_query</code>, <code>generate_answer</code></td>
+</tr>
+<tr>
+<td>Tool</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/tools.py">src/services/agents/tools.py</a></td>
+<td><code>retrieve_papers</code>: a LangChain <code>@tool</code> wrapping Jina + OpenSearch hybrid search</td>
+</tr>
+<tr>
+<td>Structured outputs</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/models.py">src/services/agents/models.py</a></td>
+<td><code>GuardrailScoring</code>, <code>GradeDocuments</code>, <code>SourceItem</code>, …</td>
+</tr>
+<tr>
+<td>Prompts</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/prompts.py">src/services/agents/prompts.py</a></td>
+<td><code>GUARDRAIL_PROMPT</code>, <code>GRADE_DOCUMENTS_PROMPT</code>, <code>REWRITE_PROMPT</code>, <code>GENERATE_ANSWER_PROMPT</code></td>
+</tr>
+<tr>
+<td>API</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/routers/agentic_ask.py">src/routers/agentic_ask.py</a></td>
+<td><code>POST /api/v1/ask-agentic</code>, <code>POST /api/v1/feedback</code></td>
+</tr>
+<tr>
+<td>Telegram bot</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/telegram/bot.py">src/services/telegram/bot.py</a>, <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/telegram/factory.py">factory.py</a></td>
+<td>Polling bot started in the FastAPI <code>lifespan</code></td>
+</tr>
+<tr>
+<td>Diagram</td>
+<td><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/static/langgraph-mermaid.png">static/langgraph-mermaid.png</a></td>
+<td>The compiled graph</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="w7-3-the-graph">3. The graph</h2>
+<p>Built in <code>_build_graph()</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/agentic_rag.py#L75-L160">agentic_rag.py:75-160</a>):</p>
+<pre><code>              START
+                │
+           ┌────▼─────┐   score &lt; 60   ┌──────────────┐
+           │ guardrail ├───────────────►│ out_of_scope ├──► END
+           └────┬─────┘                 └──────────────┘
+                │ score ≥ 60
+           ┌────▼─────┐   attempts ≥ max (AIMessage, no tool call)
+     ┌────►│ retrieve ├──────────────────────────────────────────► END
+     │     └────┬─────┘
+     │          │ AIMessage with tool_call &quot;retrieve_papers&quot;   (tools_condition)
+     │    ┌─────▼────────┐
+     │    │ tool_retrieve│   ToolNode → runs retrieve_papers → ToolMessage
+     │    └─────┬────────┘
+     │    ┌─────▼──────────┐  relevant   ┌─────────────────┐
+     │    │ grade_documents├────────────►│ generate_answer ├──► END
+     │    └─────┬──────────┘             └─────────────────┘
+     │          │ not relevant
+     │    ┌─────▼────────┐
+     └────┤ rewrite_query│   new HumanMessage with the improved query
+          └──────────────┘
+</code></pre>
+<p>Node by node:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Uses LLM?</th>
+<th>Reads</th>
+<th>Writes</th>
+<th>Fallback if the LLM call fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>guardrail</code></td>
+<td>Yes, structured output <code>GuardrailScoring{score 0–100, reason}</code></td>
+<td>latest <code>HumanMessage</code></td>
+<td><code>guardrail_result</code></td>
+<td>score = 50</td>
+</tr>
+<tr>
+<td><code>continue_after_guardrail</code> (edge fn)</td>
+<td>No</td>
+<td><code>guardrail_result</code>, <code>context.guardrail_threshold</code></td>
+<td>route</td>
+<td>missing result → continue</td>
+</tr>
+<tr>
+<td><code>out_of_scope</code></td>
+<td>No (template)</td>
+<td>query</td>
+<td>final <code>AIMessage</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>retrieve</code></td>
+<td><strong>No.</strong> It builds a tool call deterministically.</td>
+<td><code>retrieval_attempts</code></td>
+<td><code>retrieval_attempts+1</code>, <code>original_query</code>, <code>AIMessage(tool_calls=[retrieve_papers(query)])</code>, or a give-up message</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>tool_retrieve</code></td>
+<td>No (<code>ToolNode</code>)</td>
+<td>the tool call</td>
+<td><code>ToolMessage</code> with the documents</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>grade_documents</code></td>
+<td>Yes, structured output <code>GradeDocuments{binary_score yes/no, reasoning}</code></td>
+<td>latest query + latest <code>ToolMessage</code></td>
+<td><code>routing_decision</code>, <code>grading_results</code></td>
+<td>relevant if context &gt; 50 chars</td>
+</tr>
+<tr>
+<td><code>rewrite_query</code></td>
+<td>Yes, structured output <code>QueryRewriteOutput</code>, temperature 0.3</td>
+<td><code>original_query</code></td>
+<td>new <code>HumanMessage(rewritten)</code>, <code>rewritten_query</code></td>
+<td>append "research paper arxiv machine learning"</td>
+</tr>
+<tr>
+<td><code>generate_answer</code></td>
+<td>Yes, free text</td>
+<td>latest query + latest <code>ToolMessage</code></td>
+<td>final <code>AIMessage</code></td>
+<td>apology with the error</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="w7-4-concepts">4. Concepts</h2>
+<h3 id="w7-41-state-vs-context-two-kinds-of-data">4.1 State vs Context: two kinds of data</h3>
+<pre><code class="language-python">class AgentState(TypedDict):                         # changes as the graph runs
+    messages: Annotated[list[AnyMessage], add_messages]
+    original_query: Optional[str]
+    rewritten_query: Optional[str]
+    retrieval_attempts: int
+    guardrail_result: Optional[GuardrailScoring]
+    routing_decision: Optional[str]
+    grading_results: List[GradingResult]
+    ...
+
+@dataclass
+class Context:                                        # fixed for the whole run
+    ollama_client, opensearch_client, embeddings_client, langfuse_tracer, trace
+    model_name=&quot;llama3.2:1b&quot;, temperature=0.0, top_k=3,
+    max_retrieval_attempts=2, guardrail_threshold=60
+</code></pre>
+<ul>
+<li><strong>State</strong> is what nodes read and write. Each node returns a <strong>partial update</strong> (a dict with only the keys it changes) and LangGraph merges it in.</li>
+<li><strong>Reducers:</strong> <code>messages</code> is annotated with <code>add_messages</code>, so returning <code>{"messages": [msg]}</code> <strong>appends</strong> instead of overwriting. Every other key is last-write-wins.</li>
+<li><strong>Context</strong> holds dependencies (clients) and settings, passed through <code>StateGraph(AgentState, context_schema=Context)</code> and <code>graph.ainvoke(state, context=runtime_context)</code>. Nodes access it as <code>runtime.context.ollama_client</code>.</li>
+</ul>
+<p>This is <strong>dependency injection for graphs</strong>, the same idea as FastAPI's <code>Depends</code> in Week 3. Nodes become plain functions you can unit-test with a fake <code>Context</code>, and no client objects end up in the state, where they'd be copied around and shouldn't be serialized.</p>
+<h3 id="w7-42-the-message-list-is-the-working-memory">4.2 The message list is the working memory</h3>
+<p>Nodes talk to each other mainly through <code>messages</code>:</p>
+<pre><code>HumanMessage(&quot;Tell me about ML stuff&quot;)                 ← user
+AIMessage(tool_calls=[retrieve_papers(&quot;Tell me…&quot;)])    ← retrieve
+ToolMessage(&quot;&lt;chunks…&gt;&quot;)                               ← tool_retrieve
+HumanMessage(&quot;What are recent advances in …?&quot;)         ← rewrite_query
+AIMessage(tool_calls=[retrieve_papers(&quot;What are…&quot;)])   ← retrieve (attempt 2)
+ToolMessage(&quot;&lt;better chunks…&gt;&quot;)                        ← tool_retrieve
+AIMessage(&quot;Recent advances include …&quot;)                 ← generate_answer
+</code></pre>
+<p>Helpers in <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/nodes/utils.py">nodes/utils.py</a>: <code>get_latest_query()</code> returns the <strong>last <code>HumanMessage</code></strong> (so after a rewrite every node automatically uses the new query) and <code>get_latest_context()</code> returns the <strong>last <code>ToolMessage</code></strong>. The final answer is <code>messages[-1]</code>.</p>
+<h3 id="w7-43-a-deterministic-tool-call">4.3 A deterministic tool call</h3>
+<p>Usually an LLM decides whether to call a tool. Here the <code>retrieve</code> node <strong>builds the tool call itself</strong>:</p>
+<pre><code class="language-python">AIMessage(content=&quot;&quot;, tool_calls=[{&quot;id&quot;: f&quot;retrieve_{n}&quot;, &quot;name&quot;: &quot;retrieve_papers&quot;, &quot;args&quot;: {&quot;query&quot;: question}}])
+</code></pre>
+<p>It still uses LangGraph's prebuilt pieces (<code>ToolNode</code> runs the tool, <code>tools_condition</code> routes "has tool calls → tools, else END"), but without trusting a 1B model to emit valid tool-call JSON. Small models are unreliable at tool calling, so making the predictable steps deterministic and keeping the LLM for <strong>judgments</strong> (in scope? relevant? better phrasing?) is a good pattern.</p>
+<p>The <code>END</code> branch of <code>tools_condition</code> doubles as the <strong>loop breaker</strong>: once <code>retrieval_attempts &gt;= max_retrieval_attempts</code>, <code>retrieve</code> returns a plain <code>AIMessage</code> with no tool call, and the graph ends with an honest "couldn't find relevant papers" message.</p>
+<h3 id="w7-44-structured-output-for-decisions">4.4 Structured output for decisions</h3>
+<pre><code class="language-python">structured_llm = llm.with_structured_output(GuardrailScoring)
+response = await structured_llm.ainvoke(GUARDRAIL_PROMPT.format(question=query))
+# response.score: int 0–100, response.reason: str
+</code></pre>
+<p>Routing needs <strong>machine-readable</strong> decisions. Pydantic models give type checks and value ranges (<code>score: int = Field(ge=0, le=100)</code>, <code>binary_score: Literal["yes","no"]</code>). Every structured call has a <strong>fallback</strong> for when the model returns garbage.</p>
+<p>Why a 0–100 guardrail score instead of yes/no? The threshold (60) becomes a <strong>tunable</strong> knob, and the score is logged, so you can look at borderline cases in Langfuse and move the threshold.</p>
+<h3 id="w7-45-bounded-loops">4.5 Bounded loops</h3>
+<p><code>max_retrieval_attempts=2</code>: at most initial retrieval + one rewrite. Every agent loop needs a hard bound, or a bad grader can loop forever and burn tokens. Worst case on a local model: guardrail + 2 × (retrieve + grade) + rewrite + generate = <strong>6 LLM calls</strong>, against 1 in Week 5. That's the cost of being agentic.</p>
+<h3 id="w7-46-tracing-an-agent-langfuse-v3">4.6 Tracing an agent (Langfuse v3)</h3>
+<p><code>ask()</code> opens a root span with <code>langfuse.start_as_current_span("agentic_rag_request")</code> and passes a Langfuse <code>CallbackHandler()</code> in the LangGraph <code>config["callbacks"]</code>. The handler <strong>inherits the current span from context</strong>, so every LangChain LLM call inside the graph is recorded under the request trace automatically. Each node also tries to add its own span (<code>guardrail_validation</code>, <code>document_grading</code>, <code>query_rewriting</code>, <code>answer_generation</code>) with decision details such as score, routing and reasoning.</p>
+<p>The <code>/api/v1/feedback</code> endpoint is meant to attach a user rating to a trace (<code>trace_id</code> + <code>score</code> in −1..1), the start of a feedback loop for evaluation.</p>
+<h3 id="w7-47-the-telegram-bot">4.7 The Telegram bot</h3>
+<p><a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/telegram/bot.py">telegram/bot.py</a> uses <code>python-telegram-bot</code> v21 in <strong>polling</strong> mode:</p>
+<ul>
+<li>Started inside FastAPI's <code>lifespan</code> (<code>await telegram_service.start()</code>) and stopped on shutdown, so it shares the process and clients (OpenSearch, Jina, Ollama, Redis) with the API.</li>
+<li>Handlers: <code>/start</code>, <code>/help</code>, <code>/search &lt;keywords&gt;</code> (hybrid search, deduplicated to 5 unique papers, arXiv <code>abs</code> links), and <strong>any text message</strong> → RAG answer.</li>
+<li>The question path is the <strong>classic Week 5 pipeline</strong> plus the Week 6 cache (same <code>AskRequest</code>-based key), <em>not</em> the agentic graph. Answers go out as Markdown, with a plain-text fallback if Telegram rejects the formatting.</li>
+<li>Enabled via <code>TELEGRAM__ENABLED=true</code> + <code>TELEGRAM__BOT_TOKEN=...</code> (from @BotFather). If either is missing, the factory returns <code>None</code> and the API starts without the bot.</li>
+</ul>
+<p><strong>Polling vs webhook:</strong> polling (the bot asks Telegram "anything new?") works behind NAT on a laptop, with no public URL. Webhooks (Telegram pushes updates to your HTTPS endpoint) are better in production: lower latency, they scale horizontally, and no long-lived poller.</p>
+<hr />
+<h2 id="w7-5-hands-on">5. Hands-on</h2>
+<pre><code class="language-bash">git checkout week7.0 &amp;&amp; docker compose up --build -d   # or main, after the fixes in Gotchas
+docker exec rag-ollama ollama pull llama3.2:1b
+
+# Expected: rejected by guardrail
+curl -X POST localhost:8000/api/v1/ask-agentic -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;What is a good pasta recipe?&quot;}'
+
+# Expected: guardrail → retrieve → grade (relevant) → generate
+curl -X POST localhost:8000/api/v1/ask-agentic -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;How do retrieval-augmented generation systems reduce hallucination?&quot;}'
+
+# Expected (sometimes): grade fails → rewrite → retrieve again
+curl -X POST localhost:8000/api/v1/ask-agentic -H 'Content-Type: application/json' \
+  -d '{&quot;query&quot;: &quot;tell me about ML stuff&quot;}'
+</code></pre>
+<p>Inspect <code>reasoning_steps</code> and <code>retrieval_attempts</code> in each response, then open the trace in Langfuse (http://localhost:3001) to see each node's decision.</p>
+<p><strong>See the graph:</strong></p>
+<pre><code class="language-python">print(service.get_graph_mermaid())     # paste into https://mermaid.live
+</code></pre>
+<p><strong>Telegram:</strong> create a bot with @BotFather → set <code>TELEGRAM__ENABLED=true</code> and <code>TELEGRAM__BOT_TOKEN</code> in <code>.env</code> → <code>docker compose restart api</code> → <code>docker compose logs -f api | grep -i telegram</code> → message your bot.</p>
+<hr />
+<h2 id="w7-6-design-decisions-and-trade-offs">6. Design decisions and trade-offs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Explicit state machine (LangGraph) instead of a free-form ReAct agent</td>
+<td>Predictable, debuggable, bounded cost; less flexible</td>
+</tr>
+<tr>
+<td>Deterministic tool call in <code>retrieve</code></td>
+<td>Works with tiny models; the agent can't choose <em>other</em> tools or skip retrieval</td>
+</tr>
+<tr>
+<td>One binary grade over <strong>all</strong> retrieved chunks together</td>
+<td>1 LLM call instead of <code>top_k</code>; one bad chunk among good ones isn't filtered out, and one good chunk among bad ones can get everything rejected</td>
+</tr>
+<tr>
+<td>Guardrail before retrieval</td>
+<td>Saves retrieval and generation on junk; one extra LLM call (latency) on every request, and false rejections of borderline questions</td>
+</tr>
+<tr>
+<td>Same small model for every role</td>
+<td>Simple; grading and guardrail quality are limited by a 1B model. A common pattern is a small fast model for routing and a stronger one for the final answer.</td>
+</tr>
+<tr>
+<td>Telegram uses classic RAG, not the agent</td>
+<td>Faster replies and cache-friendly; no guardrail on the bot</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><a id="w7-gotchas"></a></p>
+<h2 id="w7-7-gotchas">7. Gotchas</h2>
+<p>These come from reading the code on <code>main</code> (= <code>week7.0</code> + later fixes).</p>
+<ol>
+<li><strong>🔴 Every LLM node fails, so every query ends up "out of scope".</strong> All four LLM nodes call <code>runtime.context.ollama_client.get_langchain_model(...)</code> (e.g. <a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/nodes/guardrail_node.py#L84">guardrail_node.py:84</a>), but <strong><code>OllamaClient</code> has no such method</strong>, here or at any tag. Each node catches the <code>AttributeError</code> and uses its fallback. For the guardrail that's <code>score=50</code> (<a href="https://github.com/jamwithai/production-agentic-rag-course/blob/main/src/services/agents/nodes/guardrail_node.py#L119">guardrail_node.py:119</a>), which is <strong>below the threshold of 60</strong>, so the graph always routes to <code>out_of_scope</code>.
+   <strong>Fix:</strong> add the method using <code>langchain-ollama</code> (already in <code>pyproject.toml</code>):
+   ```python
+   # src/services/ollama/client.py
+   from langchain_ollama import ChatOllama</li>
+</ol>
+<p>def get_langchain_model(self, model: str, temperature: float = 0.0) -&gt; ChatOllama:
+       return ChatOllama(base_url=self.base_url, model=model, temperature=temperature)
+   <code>``
+   Also consider whether the guardrail's *failure* fallback should really reject: an infrastructure error currently looks like "your question is off-topic" to the user.
+2. **Node-level Langfuse spans are silently skipped.** Nodes call</code>langfuse_tracer.create_span(...)<code>/</code>end_span(...)<code>, which don't exist on the v3</code>LangfuseTracer<code>(same root cause as [Week 6 Gotcha 1](#w6-gotchas)). It's wrapped in</code>try<code>, so it only logs a warning. You still get LLM-call traces from the</code>CallbackHandler<code>, but not the decision spans.
+3. **</code>sources<code>is always empty.**</code>_extract_sources<code>reads</code>state["relevant_sources"]<code>, which no node ever writes.</code>chunks_used<code>echoes</code>request.top_k<code>instead of a real count. Populating</code>relevant_sources<code>from the tool's</code>Document.metadata<code>in</code>grade_documents<code>is a good exercise.
+4. **Request params are ignored.**</code>/ask-agentic<code>calls</code>agentic_rag.ask(query=request.query)<code>only, so</code>top_k<code>,</code>use_hybrid<code>,</code>model<code>and</code>categories<code>from the request have no effect (the</code>GraphConfig<code>defaults are used).
+5. **</code>trace_id<code>is never returned** (the result dict has no</code>trace_id<code>key), so the client can't call</code>/feedback<code>. And</code>submit_feedback<code>uses</code>client.score(...)<code>, which is the v2 SDK name; v3 uses</code>create_score(...)<code>. Check this against your installed version.
+6. **No direct-answer path.** The notebook README says "What is 2+2?" gets answered directly. In the code it's rejected by the guardrail.</code>DECISION_PROMPT<code>,</code>DIRECT_RESPONSE_PROMPT<code>and</code>SYSTEM_MESSAGE<code>in</code>prompts.py<code>are unused leftovers of that design.
+7. **Telegram README vs code.**</code>/ask<code>,</code>/settings<code>,</code>/status<code>,</code>/clear<code>, inline keyboards, per-user settings, rate limiting,</code>handlers.py<code>/</code>formatters.py<code>/</code>user_manager.py<code>: none of these exist. The bot is ~230 lines in</code>bot.py<code>. Long answers aren't split (Telegram limit: 4096 chars), and the model is hard-coded to</code>llama3.2:1b<code>.
+8. **</code>tool_retrieve<code>returns</code>list[Document]<code>**, which</code>ToolNode<code>turns into one **string** in the</code>ToolMessage<code>. The grader and generator see that string: chunk text plus Python reprs of the metadata. It works, but formatting the documents explicitly (</code>[1] title (arXiv:id)\n<text>`) would give the LLM cleaner context and make citations easier.</p>
+<hr />
+<h2 id="w7-8-success-checklist">8. Success checklist</h2>
+<ul>
+<li class="check"><input type="checkbox" disabled> (On <code>main</code>) <code>get_langchain_model</code> implemented; on-topic questions no longer return the out-of-scope message</li>
+<li class="check"><input type="checkbox" disabled> An off-topic query gets the out-of-scope message, with a guardrail score &lt; 60 in <code>reasoning_steps</code></li>
+<li class="check"><input type="checkbox" disabled> An on-topic query shows <code>Retrieved documents (1 attempt(s))</code> → <code>Graded documents (1 relevant)</code></li>
+<li class="check"><input type="checkbox" disabled> You've triggered a rewrite (<code>Rewritten query for better results</code>, <code>retrieval_attempts: 2</code>)</li>
+<li class="check"><input type="checkbox" disabled> You've triggered the give-up path (a topic not in your corpus)</li>
+<li class="check"><input type="checkbox" disabled> The graph renders via <code>get_graph_mermaid()</code></li>
+<li class="check"><input type="checkbox" disabled> Telegram bot answers <code>/start</code>, <code>/search transformers</code> and a free-text question; asking the same question again is instant (cache)</li>
+</ul>
+<hr />
+<h2 id="w7-9-self-check-questions">9. Self-check questions</h2>
+<ol>
+<li>What's the difference between <code>AgentState</code> and <code>Context</code>? Why keep clients out of the state?</li>
+<li>What does the <code>add_messages</code> reducer do, and what would break without it?</li>
+<li>After <code>rewrite_query</code> runs, how does the <code>retrieve</code> node know to use the new query?</li>
+<li>Why does <code>retrieve</code> build the tool call itself instead of letting the LLM decide?</li>
+<li>How does the graph avoid an infinite rewrite loop? Trace the exact path when attempts run out.</li>
+<li>Count the LLM calls for (a) an off-topic query, (b) a query relevant on the first try, (c) a query that needs one rewrite.</li>
+<li>Why a 0–100 guardrail score and a threshold, instead of a yes/no?</li>
+<li>Polling vs webhook for a Telegram bot: when would you use each?</li>
+</ol>
+<hr />
+<h2 id="w7-10-where-to-go-from-here">10. Where to go from here</h2>
+<p>You now have the full stack: ingestion → hybrid retrieval → generation → caching → tracing → agentic control → two front-ends. Good next steps:</p>
+<ul>
+<li><strong>Evaluation:</strong> build a set of 30–50 questions with expected papers; measure retrieval recall@k and answer faithfulness (an LLM judge, or RAGAS-style metrics). Without this you can't tell whether a change helped.</li>
+<li><strong>Per-chunk grading:</strong> grade each retrieved chunk, keep the relevant ones, and populate <code>relevant_sources</code> (fixes Gotcha 3).</li>
+<li><strong>Model routing:</strong> small model for guardrail and grading, larger one for the final answer.</li>
+<li><strong>Semantic cache</strong> (Week 6 follow-up) and cache invalidation on ingestion.</li>
+<li><strong>Conversation memory</strong> for Telegram: pass previous turns as <code>messages</code>, with a LangGraph checkpointer keyed by <code>thread_id</code>.</li>
+<li><strong>Deployment:</strong> webhook mode, secrets management, and the remaining phases of the Mother of AI roadmap (MLOps/LLMOps, monitoring and alerting).</li>
+</ul></div><nav class="prevnext" aria-label="Week navigation"><a class="pn prev" href="#w6"><span>Previous</span>Monitoring + caching</a><span></span></nav></article></main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+(function () {
+  var pages = Array.prototype.slice.call(document.querySelectorAll("article.page"));
+  var links = Array.prototype.slice.call(document.querySelectorAll(".side a[data-page]"));
+  var ids = pages.map(function (p) { return p.id; });
+
+  function show(hash) {
+    var target = (hash || "").replace(/^#/, "");
+    var pageId = ids.indexOf(target) >= 0 ? target : target.split("-")[0];
+    if (ids.indexOf(pageId) < 0) pageId = "home";
+    pages.forEach(function (p) { p.hidden = p.id !== pageId; });
+    links.forEach(function (a) {
+      if (a.dataset.page === pageId) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+    var el = target && target !== pageId ? document.getElementById(target) : null;
+    if (el) el.scrollIntoView(); else window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", function () { show(location.hash); });
+  show(location.hash);
+
+  // Theme toggle (remembered per browser when storage is available)
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-theme-choice]"));
+  function applyTheme(choice) {
+    if (choice === "light" || choice === "dark") document.documentElement.setAttribute("data-theme", choice);
+    else document.documentElement.removeAttribute("data-theme");
+    buttons.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.themeChoice === choice)); });
+  }
+  var saved = null;
+  try { saved = localStorage.getItem("notes-theme"); } catch (e) {}
+  if (saved) applyTheme(saved);
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      applyTheme(b.dataset.themeChoice);
+      try { localStorage.setItem("notes-theme", b.dataset.themeChoice); } catch (e) {}
+    });
+  });
+
+  if (window.hljs) {
+    document.querySelectorAll("pre code").forEach(function (block) {
+      if (!/language-/.test(block.className)) block.classList.add("nohighlight");
+      else window.hljs.highlightElement(block);
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
