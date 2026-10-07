@@ -26,8 +26,9 @@ services:
       - OPENSEARCH__HOST=http://opensearch:9200
       - OLLAMA_HOST=http://ollama:11434
       - POSTGRES_DATABASE_URL=postgresql+psycopg2://rag_user:rag_password@postgres:5432/rag_db
-      - LANGFUSE_HOST=http://langfuse-web:3000 
-      - LANGFUSE_DEBUG=true
+      - LANGFUSE__HOST=http://langfuse-web:3000
+      - LANGFUSE_HOST=http://langfuse-web:3000
+      - LANGFUSE__DEBUG=true
       - REDIS__HOST=redis
     networks:
       - rag-network
@@ -300,7 +301,10 @@ services:
       REDIS_TLS_ENABLED: "false"
       LANGFUSE_INIT_ORG_ID: "default-org"
       LANGFUSE_INIT_ORG_NAME: "RAG Organization"
+      LANGFUSE_INIT_PROJECT_ID: "agentic-rag"
       LANGFUSE_INIT_PROJECT_NAME: "Agentic RAG"
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: "pk-lf-local-dev"
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: "sk-lf-local-dev"
       LANGFUSE_INIT_USER_EMAIL: "admin@example.com"
       LANGFUSE_INIT_USER_NAME: "Admin User"
       LANGFUSE_INIT_USER_PASSWORD: "admin123"
