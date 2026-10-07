@@ -16,6 +16,7 @@ def make_agentic_rag_service(
     langfuse_tracer: Optional[LangfuseTracer] = None,
     top_k: int = 3,
     use_hybrid: bool = True,
+    model: Optional[str] = None,
 ) -> AgenticRAGService:
     """
     Create AgenticRAGService with dependency injection.
@@ -27,6 +28,7 @@ def make_agentic_rag_service(
         langfuse_tracer: Optional Langfuse tracer for observability
         top_k: Number of documents to retrieve (default: 3)
         use_hybrid: Use hybrid search (default: True)
+        model: Ollama model for LLM calls (default: GraphConfig default)
 
     Returns:
         Configured AgenticRAGService instance
@@ -36,6 +38,8 @@ def make_agentic_rag_service(
         top_k=top_k,
         use_hybrid=use_hybrid,
     )
+    if model:
+        graph_config.model = model
 
     return AgenticRAGService(
         opensearch_client=opensearch_client,

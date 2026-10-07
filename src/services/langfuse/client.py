@@ -299,6 +299,59 @@ class LangfuseTracer:
             logger.error(f"Error creating span: {e}")
             yield None
 
+    @contextmanager
+    def trace_rag_request(
+        self,
+        query: str,
+        user_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Context manager for a top-level RAG request trace (used by RAGTracer).
+
+        Yields:
+            Root span object (or None when Langfuse is disabled)
+        """
+        if not self.client:
+            yield None
+            return
+
+        with self.client.start_as_current_span(name="rag_request", input={"query": query}, metadata=metadata or {}) as span:
+            try:
+                span.update_trace(
+                    name="rag_request",
+                    user_id=user_id,
+                    session_id=session_id,
+                    input={"query": query},
+                    metadata=metadata or {},
+                )
+            except Exception as e:
+                logger.error(f"Error updating trace attributes: {e}")
+            yield span
+
+    def create_span(
+        self,
+        trace,
+        name: str,
+        input_data: Optional[Any] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Create a child span under the given trace/span. Caller must call span.end().
+
+        Returns:
+            Span object, or None if Langfuse is disabled or no parent trace is given
+        """
+        if not self.client or trace is None:
+            return None
+
+        try:
+            return trace.start_span(name=name, input=input_data, metadata=metadata or {})
+        except Exception as e:
+            logger.error(f"Error creating span: {e}")
+            return None
+
     def update_generation(
         self,
         generation,
@@ -381,3 +434,30 @@ class LangfuseTracer:
             span.end()
         except Exception as e:
             logger.error(f"Error updating span: {e}")
+
+    def end_span(
+        self,
+        span,
+        output: Optional[Any] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        level: Optional[str] = None,
+        status_message: Optional[str] = None,
+    ):
+        """
+        Optionally update a span, then end it. Safe to call on an already-ended span.
+
+        Args:
+            span: Span object from create_span()
+            output: Operation output
+            metadata: Additional metadata to attach
+            level: Log level (e.g., "ERROR", "WARNING") for error tracking
+            status_message: Status or error message
+        """
+        if not span:
+            return
+
+        otel_span = getattr(span, "_otel_span", None)
+        if otel_span is not None and not otel_span.is_recording():
+            return
+
+        self.update_span(span, output=output, metadata=metadata, level=level, status_message=status_message)
